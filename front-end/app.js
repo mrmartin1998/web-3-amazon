@@ -1,29 +1,3 @@
-let AmazonContract;
-
-async function startApp() {
-    AmazonContract = new web3.eth.Contract(contractABI, contractAddress);
-    // Make sure you define AmazonContract globally as you did before.
-    await refreshItemsDisplay();
-}
-
-window.addEventListener('load', async () => {
-    if (window.ethereum) {
-        window.web3 = new Web3(ethereum);
-        try {
-            // Request account access
-            await ethereum.request({ method: 'eth_requestAccounts' });
-            // Account access granted
-            startApp();
-        } catch (error) {
-            console.error("User denied account access...");
-        }
-    } else if (window.web3) {
-        window.web3 = new Web3(web3.currentProvider);
-        startApp();
-    } else {
-        console.log('Non-Ethereum browser detected. You should consider trying MetaMask!');
-    }
-});
 
 const contractABI = [
     {
@@ -311,39 +285,51 @@ const contractABI = [
       "type": "function"
     }
   ];
-const contractAddress = '0xB185B165280933994Bd6946438222b38fC46db22';
+const contractAddress = '0x4CB3a2b293346729DE788cA5AFd74EBa4AADFeBE';
 
-async function refreshItemsDisplay() {
-    const itemsDiv = document.getElementById('items');
-    // Clear existing items
-    itemsDiv.innerHTML = '';
+let AmazonContract;
 
-    // Fetch the updated itemCount after adding a product
-    const updatedCount = await AmazonContract.methods.itemCount().call();
-
-    // Re-fetch and display updated items
-    for (let i = 0; i < updatedCount; i++) {
-        displayItem(i);
-    }
-}
-
-// New function to display a single item
-async function displayItem(index) {
-    const itemsDiv = document.getElementById('items');
-    const item = await AmazonContract.methods.items(index).call();
+// Function to create item elements in the UI
+function createItemElement(item) {
     const costInEth = web3.utils.fromWei(item.cost, 'ether');
     const itemDiv = document.createElement('div');
+    itemDiv.classList.add('item');
     itemDiv.innerHTML = `
         <h3>${item.name}</h3>
         <p>Price: ${costInEth} ETH</p>
-        <button onclick="buyProduct(${item.id}, '${item.cost}')">Buy</button>
+        <button class="buyBtn" data-id="${item.id}" data-cost="${item.cost}">Buy</button>
     `;
-    itemsDiv.appendChild(itemDiv);
+    return itemDiv;
 }
 
+// Function to refresh and display items
+async function refreshItemsDisplay() {
+    const itemsDiv = document.getElementById('items');
+    itemsDiv.innerHTML = '';
+    const updatedCount = await AmazonContract.methods.itemCount().call();
+    for (let i = 0; i < updatedCount; i++) {
+        const item = await AmazonContract.methods.items(i).call();
+        const itemElement = createItemElement(item);
+        itemsDiv.appendChild(itemElement);
+    }
+}
+
+// Function to handle buying products
+async function buyProduct(itemId, itemCostWei) {
+    const accounts = await web3.eth.getAccounts();
+    try {
+        await AmazonContract.methods.buy(itemId).send({ from: accounts[0], value: itemCostWei });
+        alert('Product purchased successfully!');
+        refreshItemsDisplay();
+    } catch (error) {
+        console.error('Error purchasing product:', error);
+        alert('Error purchasing product. See console for details.');
+    }
+}
+
+// Function to add a new product
 async function addProduct() {
-    // Retrieve product details from form inputs
-    const id = document.getElementById('productId').value; // New line for product ID
+    const id = document.getElementById('productId').value;
     const name = document.getElementById('productName').value;
     const category = document.getElementById('productCategory').value;
     const image = document.getElementById('productImage').value;
@@ -351,42 +337,73 @@ async function addProduct() {
     const rating = document.getElementById('productRating').value;
     const stock = document.getElementById('productStock').value;
 
-    // Convert numeric fields to appropriate data types
-    const idNum = parseInt(id); // Convert ID to a number
-    const costInWei = web3.utils.toWei(cost, 'ether'); // Convert cost to Wei
-    const ratingNum = parseInt(rating); // Convert rating to a number
-    const stockNum = parseInt(stock); // Convert stock to a number
+    const idNum = parseInt(id);
+    const costInWei = web3.utils.toWei(cost, 'ether');
+    const ratingNum = parseInt(rating);
+    const stockNum = parseInt(stock);
 
-    // Get the current account from MetaMask
     const accounts = await web3.eth.getAccounts();
-    const currentAccount = accounts[0];
-
     try {
-        // Send transaction to list the product
-        await AmazonContract.methods.list(idNum, name, category, image, costInWei, ratingNum, stockNum)
-            .send({ from: currentAccount })
-            .on('receipt', async (receipt) => {
-                alert('Product added successfully!');
-                console.log(receipt);
-                // Refresh the items displayed
-                await refreshItemsDisplay();
-            });
+        await AmazonContract.methods.list(idNum, name, category, image, costInWei, ratingNum, stockNum).send({ from: accounts[0] });
+        alert('Product added successfully!');
+        refreshItemsDisplay();
     } catch (error) {
         console.error('Error while adding product:', error);
         alert('Error adding product. See console for details.');
     }
 }
 
-async function buyProduct(itemId, itemCostWei) {
-    const accounts = await web3.eth.getAccounts();
-    await AmazonContract.methods.buy(itemId)
-        .send({ from: accounts[0], value: itemCostWei })
-        .then(() => {
-            alert('Product purchased successfully!');
-            // You might want to refresh the display or update the stock count here
-        })
-        .catch(e => {
-            console.error(e);
-            alert('Error purchasing product. See console for details.');
-        });
+// Function to initialize the contract
+async function initializeContract() {
+    AmazonContract = new web3.eth.Contract(contractABI, contractAddress);
 }
+
+// Function to initialize Web3
+async function initializeWeb3() {
+    if (window.ethereum) {
+        window.web3 = new Web3(window.ethereum);
+        try {
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+        } catch (error) {
+            console.error('User denied account access:', error);
+            return false;
+        }
+    } else if (window.web3) {
+        window.web3 = new Web3(web3.currentProvider);
+    } else {
+        alert('Non-Ethereum browser detected. You should consider trying MetaMask!');
+        return false;
+    }
+    return true;
+}
+
+// Function to attach event listeners
+function attachEventListeners() {
+    document.addEventListener('click', async (event) => {
+        if (event.target.classList.contains('buyBtn')) {
+            const itemId = event.target.getAttribute('data-id');
+            const itemCostWei = event.target.getAttribute('data-cost');
+            await buyProduct(itemId, itemCostWei);
+        }
+    });
+
+    const addProductButton = document.getElementById('addProductButton');
+    if (addProductButton) {
+        addProductButton.addEventListener('click', addProduct);
+    }
+}
+
+// Main function to initialize the app
+async function initializeApp() {
+    const web3Initialized = await initializeWeb3();
+    if (!web3Initialized) {
+        console.error('Web3 initialization failed');
+        return;
+    }
+
+    await initializeContract();
+    attachEventListeners();
+    refreshItemsDisplay();
+}
+
+window.addEventListener('load', initializeApp);
