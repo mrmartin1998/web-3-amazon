@@ -1,23 +1,26 @@
-window.addEventListener('load', async () => {
+let AmazonContract;
 
+async function startApp() {
+    AmazonContract = new web3.eth.Contract(contractABI, contractAddress);
+    // Make sure you define AmazonContract globally as you did before.
+    await refreshItemsDisplay();
+}
+
+window.addEventListener('load', async () => {
     if (window.ethereum) {
         window.web3 = new Web3(ethereum);
         try {
-
-            await ethereum.request({ method: 'eth_requestAccounts' }); 
-            
+            // Request account access
+            await ethereum.request({ method: 'eth_requestAccounts' });
+            // Account access granted
             startApp();
         } catch (error) {
-            console.error("User denied account access...")
+            console.error("User denied account access...");
         }
-    } 
-
-    else if (window.web3) {
+    } else if (window.web3) {
         window.web3 = new Web3(web3.currentProvider);
         startApp();
-    } 
-
-    else {
+    } else {
         console.log('Non-Ethereum browser detected. You should consider trying MetaMask!');
     }
 });
@@ -308,29 +311,39 @@ const contractABI = [
       "type": "function"
     }
   ];
-const contractAddress = '0x85708afb74D041CCcb76cAC2129104Bb74d98b2b';
+const contractAddress = '0xB185B165280933994Bd6946438222b38fC46db22';
 
-function startApp() {
-    const AmazonContract = new web3.eth.Contract(contractABI, contractAddress);
+async function refreshItemsDisplay() {
+    const itemsDiv = document.getElementById('items');
+    // Clear existing items
+    itemsDiv.innerHTML = '';
 
-    displayItems(AmazonContract);
+    // Fetch the updated itemCount after adding a product
+    const updatedCount = await AmazonContract.methods.itemCount().call();
 
+    // Re-fetch and display updated items
+    for (let i = 0; i < updatedCount; i++) {
+        displayItem(i);
+    }
 }
 
-async function displayItems(contract) {
+// New function to display a single item
+async function displayItem(index) {
     const itemsDiv = document.getElementById('items');
-    const count = await contract.methods.itemCount().call();  // Get total item count
-
-    for (let i = 0; i < count; i++) {
-        const item = await contract.methods.items(i).call();
-        const itemDiv = document.createElement('div');
-        itemDiv.innerHTML = `<h3>${item.name}</h3><p>Price: ${item.cost}</p>`;
-        itemsDiv.appendChild(itemDiv);
-    }
+    const item = await AmazonContract.methods.items(index).call();
+    const costInEth = web3.utils.fromWei(item.cost, 'ether');
+    const itemDiv = document.createElement('div');
+    itemDiv.innerHTML = `
+        <h3>${item.name}</h3>
+        <p>Price: ${costInEth} ETH</p>
+        <button onclick="buyProduct(${item.id}, '${item.cost}')">Buy</button>
+    `;
+    itemsDiv.appendChild(itemDiv);
 }
 
 async function addProduct() {
     // Retrieve product details from form inputs
+    const id = document.getElementById('productId').value; // New line for product ID
     const name = document.getElementById('productName').value;
     const category = document.getElementById('productCategory').value;
     const image = document.getElementById('productImage').value;
@@ -338,27 +351,25 @@ async function addProduct() {
     const rating = document.getElementById('productRating').value;
     const stock = document.getElementById('productStock').value;
 
+    // Convert numeric fields to appropriate data types
+    const idNum = parseInt(id); // Convert ID to a number
+    const costInWei = web3.utils.toWei(cost, 'ether'); // Convert cost to Wei
+    const ratingNum = parseInt(rating); // Convert rating to a number
+    const stockNum = parseInt(stock); // Convert stock to a number
+
     // Get the current account from MetaMask
     const accounts = await web3.eth.getAccounts();
     const currentAccount = accounts[0];
 
-    // You may want to convert cost to the appropriate unit (e.g., wei) if it's entered in Ether
-    const costInWei = web3.utils.toWei(cost, 'ether');
-
     try {
-        // Assuming your list function in smart contract doesn't expect an id, and auto-generates it
-        await AmazonContract.methods.list(name, category, image, costInWei, rating, stock)
+        // Send transaction to list the product
+        await AmazonContract.methods.list(idNum, name, category, image, costInWei, ratingNum, stockNum)
             .send({ from: currentAccount })
-            .on('transactionHash', (hash) => {
-                console.log('Transaction Hash:', hash);
-            })
-            .on('confirmation', (confirmationNumber, receipt) => {
-                console.log('Confirmation:', confirmationNumber);
-            })
-            .on('receipt', (receipt) => {
-                // Transaction receipt received
+            .on('receipt', async (receipt) => {
                 alert('Product added successfully!');
                 console.log(receipt);
+                // Refresh the items displayed
+                await refreshItemsDisplay();
             });
     } catch (error) {
         console.error('Error while adding product:', error);
@@ -366,10 +377,16 @@ async function addProduct() {
     }
 }
 
-async function buyProduct(productId, productCost) {
+async function buyProduct(itemId, itemCostWei) {
     const accounts = await web3.eth.getAccounts();
-    await AmazonContract.methods.buy(productId)
-        .send({ from: accounts[0], value: productCost })
-        .then(() => alert('Product purchased successfully!'))
-        .catch(e => console.error(e));
+    await AmazonContract.methods.buy(itemId)
+        .send({ from: accounts[0], value: itemCostWei })
+        .then(() => {
+            alert('Product purchased successfully!');
+            // You might want to refresh the display or update the stock count here
+        })
+        .catch(e => {
+            console.error(e);
+            alert('Error purchasing product. See console for details.');
+        });
 }
