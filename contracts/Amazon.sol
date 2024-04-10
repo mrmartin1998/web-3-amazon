@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 contract Amazon {
     address public owner;
+    uint256 public itemCount;
 
     struct Item {
         uint256 id;
@@ -57,6 +58,9 @@ contract Amazon {
 
         // Add Item to mapping
         items[_id] = item;
+
+        // Increment the itemCount
+        itemCount++;
 
         // Emit event
         emit List(_name, _cost, _stock);

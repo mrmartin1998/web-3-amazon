@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Web3 Amazon</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    <h1>Welcome to Web3 Amazon</h1>
+    <div id="items">
+        <!-- Items will be dynamically listed here -->
+    </div>
+    <div id="addProductForm">
+        <input type="text" id="productName" placeholder="Product Name">
+        <input type="text" id="productCategory" placeholder="Category">
+        <input type="text" id="productImage" placeholder="Image URL">
+        <input type="number" id="productCost" placeholder="Cost">
+        <input type="number" id="productRating" placeholder="Rating">
+        <input type="number" id="productStock" placeholder="Stock">
+        <button onclick="addProduct()">Add Product</button>
+    </div>
+    
+    <!-- Other UI elements like forms for listing items, etc. -->
+    <script src="https://cdn.jsdelivr.net/npm/web3/dist/web3.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
