@@ -19,7 +19,7 @@ async function initializeWeb3() {
 }
 
 async function initializeContract() {
-    const contractAddress = '0x3dA5122A1f0C713896A742c51D5121D6033125B6'; // Update with your contract address
+    const contractAddress = '0xdCfAd21fa9E2549Ed06698Cb752FbE2ca63dBFE8'; // Update with your contract address
     const contractABI = [
       {
         "inputs": [],
@@ -58,6 +58,12 @@ async function initializeContract() {
             "indexed": false,
             "internalType": "string",
             "name": "name",
+            "type": "string"
+          },
+          {
+            "indexed": false,
+            "internalType": "string",
+            "name": "imageUrl",
             "type": "string"
           },
           {
@@ -113,6 +119,11 @@ async function initializeContract() {
           {
             "internalType": "string",
             "name": "category",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "imageUrl",
             "type": "string"
           },
           {
@@ -182,6 +193,11 @@ async function initializeContract() {
             "type": "string"
           },
           {
+            "internalType": "string",
+            "name": "_imageUrl",
+            "type": "string"
+          },
+          {
             "internalType": "uint256",
             "name": "_costWei",
             "type": "uint256"
@@ -223,39 +239,50 @@ async function initializeContract() {
 }
 
 async function addProduct() {
-    const id = document.getElementById('productId').value;
-    const name = document.getElementById('productName').value;
-    const category = document.getElementById('productCategory').value;
-    const cost = web3.utils.toWei(document.getElementById('productCost').value, 'ether');
-    const stock = document.getElementById('productStock').value;
+  const id = document.getElementById('productId').value;
+  const name = document.getElementById('productName').value;
+  const category = document.getElementById('productCategory').value;
+  const cost = document.getElementById('productCost').value; // assuming this is already in ETH
+  const stock = document.getElementById('productStock').value;
 
-    const accounts = await web3.eth.getAccounts();
-    try {
-        await AmazonContract.methods.list(id, name, category, cost, stock).send({ from: accounts[0] });
-        alert('Product added successfully!');
-        loadProducts();
-    } catch (error) {
-        console.error('Error while adding product:', error);
-    }
+  const costInWei = web3.utils.toWei(cost, 'ether');
+
+  const imageUrl = "https://via.placeholder.com/150"; // Placeholder image URL
+
+  const accounts = await web3.eth.getAccounts();
+  try {
+      await AmazonContract.methods.list(id, name, category, imageUrl, costInWei, stock).send({ from: accounts[0] });
+      alert('Product added successfully!');
+      loadProducts(); // Refresh the product list
+  } catch (error) {
+      console.error('Error while adding product:', error);
+  }
 }
 
 async function loadProducts() {
-    const productList = document.getElementById('productList');
-    productList.innerHTML = '';
-    const count = await AmazonContract.methods.itemCount().call();
+  const productList = document.getElementById('productList');
+  const categoryFilter = document.getElementById('filterCategory');
 
-    for (let i = 0; i < count; i++) {
-        const item = await AmazonContract.methods.items(i).call();
-        const itemElement = document.createElement('div');
-        itemElement.className = 'product';
-        itemElement.innerHTML = `
-            <h3>${item.name}</h3>
-            <p>Price: ${web3.utils.fromWei(item.cost, 'ether')} ETH</p>
-            <p>Stock: ${item.stock}</p>
-            <button onclick="buyProduct(${item.id})">Buy</button>
-        `;
-        productList.appendChild(itemElement);
-    }
+  productList.innerHTML = ''; // Clear the current items
+  categoryFilter.innerHTML = '<option value="all">All Categories</option>'; // Clear the current filter options
+
+  const uniqueCategories = new Set();
+  const count = await AmazonContract.methods.itemCount().call();
+
+  for (let i = 0; i < count; i++) {
+      const item = await AmazonContract.methods.items(i).call();
+      uniqueCategories.add(item.category); // Add the item's category to the set
+
+      const itemElement = createItemElement(item);
+      productList.appendChild(itemElement);
+  }
+
+  uniqueCategories.forEach(category => {
+      const option = document.createElement('option');
+      option.value = category;
+      option.innerText = category;
+      categoryFilter.appendChild(option);
+  });
 }
 
 async function buyProduct(id) {
@@ -270,6 +297,28 @@ async function buyProduct(id) {
     }
 }
 
+async function uploadImage(file) {
+  const formData = new FormData();
+  formData.append('image', file);
+
+  try {
+      const response = await fetch('https://api.yourstorage.com/upload', {
+          method: 'POST',
+          body: formData,
+      });
+
+      if (!response.ok) {
+          throw new Error('Network response was not ok: ' + response.statusText);
+      }
+
+      const data = await response.json();
+      return data.url; // Assuming the API responds with JSON that includes the URL
+  } catch (error) {
+      console.error('Error uploading image:', error);
+      throw error; // Re-throw the error so it can be handled further up the call stack
+  }
+}
+
 async function initializeApp() {
     if (!await initializeWeb3()) {
         console.error('Web3 initialization failed');
@@ -277,6 +326,84 @@ async function initializeApp() {
     }
     await initializeContract();
     loadProducts();
+}
+
+async function searchProducts() {
+  const searchValue = document.getElementById('searchInput').value.toLowerCase();
+  const itemsDiv = document.getElementById('productList');
+  const count = await AmazonContract.methods.itemCount().call();
+  
+  itemsDiv.innerHTML = ''; // Clear the current items
+  
+  for (let i = 0; i < count; i++) {
+    const item = await AmazonContract.methods.items(i).call();
+    // Convert both strings to lowercase to make the search case-insensitive
+    if (item.name.toLowerCase().includes(searchValue) || item.category.toLowerCase().includes(searchValue)) {
+      const itemElement = createItemElement(item); // createItemElement is your existing function to create the product display
+      itemsDiv.appendChild(itemElement);
+    }
+  }
+}
+
+async function sortProducts() {
+  const sortOption = document.getElementById('sortOptions').value;
+  let itemsArray = await fetchAllItems(); // Assume this is a function that fetches all items and returns them as an array
+
+  if (sortOption === 'priceLowHigh') {
+    itemsArray.sort((a, b) => parseFloat(a.cost) - parseFloat(b.cost));
+  } else if (sortOption === 'priceHighLow') {
+    itemsArray.sort((a, b) => parseFloat(b.cost) - parseFloat(a.cost));
+  }
+  // Implement other sorting options as needed
+  
+  displayItems(itemsArray); // Function to display the items
+}
+
+async function fetchAllItems() {
+  const count = await AmazonContract.methods.itemCount().call();
+  let itemsArray = [];
+  
+  for (let i = 0; i < count; i++) {
+    let item = await AmazonContract.methods.items(i).call();
+    itemsArray.push(item);
+  }
+  
+  return itemsArray;
+}
+
+function displayItems(itemsArray) {
+  const itemsDiv = document.getElementById('productList');
+  itemsDiv.innerHTML = ''; // Clear the current items
+
+  itemsArray.forEach(item => {
+      const itemElement = createItemElement(item);
+      itemsDiv.appendChild(itemElement);
+  });
+}
+
+async function filterProducts() {
+  const selectedCategory = document.getElementById('filterCategory').value;
+  const itemsArray = await fetchAllItems();
+
+  // If 'all' is selected, display all items. Otherwise, filter the items.
+  const filteredItemsArray = selectedCategory === 'all'
+      ? itemsArray
+      : itemsArray.filter(item => item.category === selectedCategory);
+
+  displayItems(filteredItemsArray);
+}
+
+function createItemElement(item) {
+  const itemElement = document.createElement('div');
+  itemElement.className = 'product';
+  itemElement.innerHTML = `
+    <img src="${item.imageUrl || 'https://via.placeholder.com/150'}" alt="${item.name}" style="width:100px;height:100px;">
+    <h3>${item.name}</h3>
+    <p>Price: ${web3.utils.fromWei(item.cost, 'ether')} ETH</p>
+    <p>Stock: ${item.stock}</p>
+    <button onclick="buyProduct(${item.id})">Buy</button>
+  `;
+  return itemElement;
 }
 
 window.addEventListener('load', initializeApp);

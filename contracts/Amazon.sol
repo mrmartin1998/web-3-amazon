@@ -9,6 +9,7 @@ contract Amazon {
         uint256 id;
         string name;
         string category;
+        string imageUrl; // Add this line
         uint256 cost;
         uint256 stock;
     }
@@ -17,7 +18,7 @@ contract Amazon {
     mapping(address => uint256) public orderCount;
 
     event Buy(address indexed buyer, uint256 itemId);
-    event List(uint256 indexed itemId, string name, uint256 cost, uint256 stock);
+    event List(uint256 indexed itemId, string name, string imageUrl, uint256 cost, uint256 stock);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only the owner can call this function");
@@ -29,25 +30,27 @@ contract Amazon {
     }
 
     function list(
-    uint256 _id,
-    string memory _name,
-    string memory _category,
-    uint256 _costWei,  // Indicate that this should be in wei
-    uint256 _stock
-) public onlyOwner {
-    require(items[_id].id == 0, "Item already exists");
+        uint256 _id,
+        string memory _name,
+        string memory _category,
+        string memory _imageUrl, // Include this parameter
+        uint256 _costWei,
+        uint256 _stock
+    ) public onlyOwner {
+        require(items[_id].id == 0, "Item already exists");
 
-    items[_id] = Item({
-        id: _id,
-        name: _name,
-        category: _category,
-        cost: _costWei,  // Store cost in wei
-        stock: _stock
-    });
+        items[_id] = Item({
+            id: _id,
+            name: _name,
+            category: _category,
+            imageUrl: _imageUrl, // Store image URL
+            cost: _costWei,
+            stock: _stock
+        });
 
     itemCount++;
-    emit List(_id, _name, _costWei, _stock);  // Emit cost in wei
-}
+        emit List(_id, _name, _imageUrl, _costWei, _stock); // Emit image URL
+    }
 
 
     function buy(uint256 _id) public payable {
