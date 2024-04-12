@@ -1,26 +1,27 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web3 Amazon</title>
     <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
     <h1>Welcome to Web3 Amazon</h1>
-    <div id="items">
-        <!-- Items will be dynamically listed here -->
+
+    <div id="productList">
+        <!-- Products will be loaded here -->
     </div>
-    <div id="addProductForm">
-        <input type="text" id="productName" placeholder="Product Name">
-        <input type="text" id="productCategory" placeholder="Category">
-        <input type="text" id="productImage" placeholder="Image URL">
-        <input type="number" id="productCost" placeholder="Cost">
-        <input type="number" id="productRating" placeholder="Rating">
-        <input type="number" id="productStock" placeholder="Stock">
-        <input type="number" id="productId" placeholder="Product ID">
-        <button onclick="addProduct()">Add Product</button>
-    </div>
-    
-    <!-- Other UI elements like forms for listing items, etc. -->
+
+    <form id="addProductForm" onsubmit="event.preventDefault(); addProduct();">
+        <input type="number" id="productId" placeholder="Product ID" required>
+        <input type="text" id="productName" placeholder="Product Name" required>
+        <input type="text" id="productCategory" placeholder="Category" required>
+        <input type="number" id="productCost" placeholder="Cost (in ETH)" step="0.01" required>
+        <input type="number" id="productStock" placeholder="Stock" required>
+        <button type="submit">Add Product</button>
+    </form>
+
     <script src="https://cdn.jsdelivr.net/npm/web3/dist/web3.min.js"></script>
     <script src="app.js"></script>
 </body>

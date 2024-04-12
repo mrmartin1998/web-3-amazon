@@ -9,26 +9,18 @@ contract Amazon {
         uint256 id;
         string name;
         string category;
-        string image;
         uint256 cost;
-        uint256 rating;
         uint256 stock;
     }
 
-    struct Order {
-        uint256 time;
-        Item item;
-    }
-
     mapping(uint256 => Item) public items;
-    mapping(address => mapping(uint256 => Order)) public orders;
     mapping(address => uint256) public orderCount;
 
-    event Buy(address buyer, uint256 orderId, uint256 itemId);
-    event List(string name, uint256 cost, uint256 quantity);
+    event Buy(address indexed buyer, uint256 itemId);
+    event List(uint256 indexed itemId, string name, uint256 cost, uint256 stock);
 
     modifier onlyOwner() {
-        require(msg.sender == owner);
+        require(msg.sender == owner, "Only the owner can call this function");
         _;
     }
 
@@ -37,61 +29,46 @@ contract Amazon {
     }
 
     function list(
-        uint256 _id,
-        string memory _name,
-        string memory _category,
-        string memory _image,
-        uint256 _cost,
-        uint256 _rating,
-        uint256 _stock
-    ) public onlyOwner {
-        // Create Item
-        Item memory item = Item(
-            _id,
-            _name,
-            _category,
-            _image,
-            _cost,
-            _rating,
-            _stock
-        );
+    uint256 _id,
+    string memory _name,
+    string memory _category,
+    uint256 _costWei,  // Indicate that this should be in wei
+    uint256 _stock
+) public onlyOwner {
+    require(items[_id].id == 0, "Item already exists");
 
-        // Add Item to mapping
-        items[_id] = item;
+    items[_id] = Item({
+        id: _id,
+        name: _name,
+        category: _category,
+        cost: _costWei,  // Store cost in wei
+        stock: _stock
+    });
 
-        // Increment the itemCount
-        itemCount++;
+    itemCount++;
+    emit List(_id, _name, _costWei, _stock);  // Emit cost in wei
+}
 
-        // Emit event
-        emit List(_name, _cost, _stock);
-    }
 
     function buy(uint256 _id) public payable {
-        // Fetch item
-        Item memory item = items[_id];
+        Item storage item = items[_id];
 
-        // Require enough ether to buy item
-        require(msg.value >= item.cost);
+        require(item.id != 0, "Item does not exist");
+        require(msg.value >= item.cost, "Not enough ether to buy item");
+        require(item.stock > 0, "Item is out of stock");
 
-        // Require item is in stock
-        require(item.stock > 0);
+        item.stock--;
+        orderCount[msg.sender]++;
+        emit Buy(msg.sender, _id);
 
-        // Create order
-        Order memory order = Order(block.timestamp, item);
-
-        // Add order for user
-        orderCount[msg.sender]++; // <-- Order ID
-        orders[msg.sender][orderCount[msg.sender]] = order;
-
-        // Subtract stock
-        items[_id].stock = item.stock - 1;
-
-        // Emit event
-        emit Buy(msg.sender, orderCount[msg.sender], item.id);
+        // Transfer the amount to owner
+        payable(owner).transfer(msg.value);
     }
 
     function withdraw() public onlyOwner {
-        (bool success, ) = owner.call{value: address(this).balance}("");
-        require(success);
+        uint256 balance = address(this).balance;
+        require(balance > 0, "Balance is 0");
+
+        payable(owner).transfer(balance);
     }
 }
