@@ -9,6 +9,15 @@
 <body>
     <h1>Welcome to Web3 Amazon</h1>
 
+    <button id="connectWalletButton" onclick="connectWallet()">Connect Wallet</button>
+    <div id="walletInfo">
+        <div id="walletAddress"></div>
+        <div id="walletBalance"></div>
+    </div>
+
+    <div id="shoppingCart"></div>
+    <button onclick="checkout()">Checkout</button>
+
     <input type="text" id="searchInput" placeholder="Search products" oninput="searchProducts()">
 
     <select id="sortOptions" onchange="sortProducts()">

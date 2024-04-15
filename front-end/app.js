@@ -19,7 +19,7 @@ async function initializeWeb3() {
 }
 
 async function initializeContract() {
-    const contractAddress = '0xdCfAd21fa9E2549Ed06698Cb752FbE2ca63dBFE8'; // Update with your contract address
+    const contractAddress = '0xA9cA45fe53C2f2bf923aeB2664760d1eD167cA1e'; // Update with your contract address
     const contractABI = [
       {
         "inputs": [],
@@ -39,6 +39,12 @@ async function initializeContract() {
             "indexed": false,
             "internalType": "uint256",
             "name": "itemId",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "quantity",
             "type": "uint256"
           }
         ],
@@ -147,9 +153,14 @@ async function initializeContract() {
             "internalType": "address",
             "name": "",
             "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
           }
         ],
-        "name": "orderCount",
+        "name": "orders",
         "outputs": [
           {
             "internalType": "uint256",
@@ -177,11 +188,6 @@ async function initializeContract() {
       },
       {
         "inputs": [
-          {
-            "internalType": "uint256",
-            "name": "_id",
-            "type": "uint256"
-          },
           {
             "internalType": "string",
             "name": "_name",
@@ -219,6 +225,11 @@ async function initializeContract() {
             "internalType": "uint256",
             "name": "_id",
             "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "quantity",
+            "type": "uint256"
           }
         ],
         "name": "buy",
@@ -233,6 +244,26 @@ async function initializeContract() {
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "user",
+            "type": "address"
+          }
+        ],
+        "name": "getOrders",
+        "outputs": [
+          {
+            "internalType": "uint256[]",
+            "name": "",
+            "type": "uint256[]"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function",
+        "constant": true
       }
     ];
     AmazonContract = new web3.eth.Contract(contractABI, contractAddress);
@@ -246,12 +277,11 @@ async function addProduct() {
   const stock = document.getElementById('productStock').value;
 
   const costInWei = web3.utils.toWei(cost, 'ether');
-
   const imageUrl = "https://via.placeholder.com/150"; // Placeholder image URL
 
   const accounts = await web3.eth.getAccounts();
   try {
-      await AmazonContract.methods.list(id, name, category, imageUrl, costInWei, stock).send({ from: accounts[0] });
+      await AmazonContract.methods.list(name, category, imageUrl, costInWei, stock).send({ from: accounts[0] });
       alert('Product added successfully!');
       loadProducts(); // Refresh the product list
   } catch (error) {
@@ -260,29 +290,34 @@ async function addProduct() {
 }
 
 async function loadProducts() {
-  const productList = document.getElementById('productList');
-  const categoryFilter = document.getElementById('filterCategory');
+  try {
+    const productList = document.getElementById('productList');
+    const categoryFilter = document.getElementById('filterCategory');
+    productList.innerHTML = ''; // Clear the current items
+    categoryFilter.innerHTML = '<option value="all">All Categories</option>'; // Clear the current filter options
 
-  productList.innerHTML = ''; // Clear the current items
-  categoryFilter.innerHTML = '<option value="all">All Categories</option>'; // Clear the current filter options
+    const uniqueCategories = new Set();
+    const count = await AmazonContract.methods.itemCount().call();
 
-  const uniqueCategories = new Set();
-  const count = await AmazonContract.methods.itemCount().call();
-
-  for (let i = 0; i < count; i++) {
-      const item = await AmazonContract.methods.items(i).call();
-      uniqueCategories.add(item.category); // Add the item's category to the set
-
+    // Inside the loadProducts() function
+  for (let i = 1; i < count; i++) {
+    const item = await AmazonContract.methods.items(i).call();
+    if (item && item.id !== "0") { // Add a check to ensure the item is valid
+      uniqueCategories.add(item.category);
       const itemElement = createItemElement(item);
       productList.appendChild(itemElement);
+    }
   }
 
-  uniqueCategories.forEach(category => {
+    uniqueCategories.forEach(category => {
       const option = document.createElement('option');
       option.value = category;
       option.innerText = category;
       categoryFilter.appendChild(option);
-  });
+    });
+  } catch (error) {
+    console.error('Failed to load products:', error);
+  }
 }
 
 async function buyProduct(id) {
@@ -335,7 +370,7 @@ async function searchProducts() {
   
   itemsDiv.innerHTML = ''; // Clear the current items
   
-  for (let i = 0; i < count; i++) {
+  for (let i = 1; i < count; i++) {
     const item = await AmazonContract.methods.items(i).call();
     // Convert both strings to lowercase to make the search case-insensitive
     if (item.name.toLowerCase().includes(searchValue) || item.category.toLowerCase().includes(searchValue)) {
@@ -363,7 +398,7 @@ async function fetchAllItems() {
   const count = await AmazonContract.methods.itemCount().call();
   let itemsArray = [];
   
-  for (let i = 0; i < count; i++) {
+  for (let i = 1; i < count; i++) {
     let item = await AmazonContract.methods.items(i).call();
     itemsArray.push(item);
   }
@@ -404,6 +439,134 @@ function createItemElement(item) {
     <button onclick="buyProduct(${item.id})">Buy</button>
   `;
   return itemElement;
+}
+
+let userAccount = null;
+
+async function connectWallet() {
+  if (window.ethereum) {
+      try {
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          userAccount = accounts[0];
+          await displayAccountInfo(userAccount);
+          window.ethereum.on('accountsChanged', handleAccountsChanged);
+      } catch (error) {
+          if (error.code === 4001) {
+              alert("Connection to MetaMask wallet was rejected by the user.");
+          } else {
+              console.error(error);
+          }
+      }
+  } else {
+      alert('Please install MetaMask to use this feature!');
+  }
+}
+
+async function handleAccountsChanged(accounts) {
+  if (accounts.length === 0) {
+      console.log('Please connect to MetaMask.');
+  } else {
+      userAccount = accounts[0];
+      await displayAccountInfo(userAccount);
+      loadProducts(); // Reload the products as the user account has changed
+  }
+}
+
+async function displayAccountInfo(account) {
+  document.getElementById('walletAddress').innerText = `Connected account: ${account}`;
+  // Fetch the balance of the connected account
+  const balanceWei = await web3.eth.getBalance(account);
+  const balanceEth = web3.utils.fromWei(balanceWei, 'ether');
+  document.getElementById('walletBalance').innerText = `Balance: ${balanceEth} ETH`;
+}
+
+// Add this function to update the user's balance when their account changes
+async function updateBalance() {
+  if (userAccount) {
+      const balanceWei = await web3.eth.getBalance(userAccount);
+      const balanceEth = web3.utils.fromWei(balanceWei, 'ether');
+      document.getElementById('walletBalance').innerText = `Balance: ${balanceEth} ETH`;
+  }
+}
+
+// Handle account change
+function handleAccountsChanged(accounts) {
+  if (accounts.length === 0) {
+    console.log('Please connect to MetaMask.');
+  } else {
+    userAccount = accounts[0];
+    document.getElementById('walletAddress').innerText = `Connected account: ${userAccount}`;
+    loadProducts(); // Reload the products as the user account has changed
+  }
+}
+
+let shoppingCart = [];
+
+// Add to cart functionality
+function addToCart(itemId, quantity) {
+  // Find the item in the cart
+  const itemIndex = shoppingCart.findIndex((item) => item.id === itemId);
+
+  if (itemIndex > -1) {
+    // If the item exists, update the quantity
+    shoppingCart[itemIndex].quantity += quantity;
+  } else {
+    // If the item doesn't exist, add it to the cart
+    shoppingCart.push({ id: itemId, quantity: quantity });
+  }
+
+  // Update the cart display
+  updateCartDisplay();
+}
+
+// Remove item from cart
+function removeFromCart(itemId) {
+  shoppingCart = shoppingCart.filter(item => item.id !== itemId);
+  // Update the cart display here
+}
+
+// Checkout function
+async function checkout() {
+  if (!userAccount) {
+    alert('Please connect your wallet first!');
+    return;
+  }
+
+  // Start a batch transaction
+  for (const cartItem of shoppingCart) {
+    const item = await AmazonContract.methods.items(cartItem.id).call();
+    const costInWei = web3.utils.toWei(item.cost.toString(), 'ether') * cartItem.quantity;
+
+    try {
+      await AmazonContract.methods.buy(cartItem.id, cartItem.quantity)
+        .send({ from: userAccount, value: costInWei });
+      // Provide feedback for successful purchase
+    } catch (error) {
+      // Handle errors, such as insufficient funds or stock
+    }
+  }
+
+  // Clear the shopping cart after checkout
+  shoppingCart = [];
+  updateCartDisplay();
+}
+
+// Fetch order history (you will need to implement this according to your smart contract events)
+async function fetchOrderHistory() {
+  const buyEvents = await AmazonContract.getPastEvents('Buy', {
+    filter: { buyer: userAccount },
+    fromBlock: 0,
+    toBlock: 'latest'
+  });
+  // Process these buyEvents to display the order history
+}
+
+// Function to display shopping cart
+function updateCartDisplay() {
+  const cartDiv = document.getElementById('shoppingCart');
+  cartDiv.innerHTML = shoppingCart.map(item =>
+      `<div>${item.id}: ${item.quantity}</div>`
+  ).join('');
 }
 
 window.addEventListener('load', initializeApp);

@@ -3,21 +3,21 @@ pragma solidity ^0.8.0;
 
 contract Amazon {
     address public owner;
-    uint256 public itemCount;
+    uint256 public itemCount = 1;  // Start from 1 to avoid zero initialization issues
 
     struct Item {
         uint256 id;
         string name;
         string category;
-        string imageUrl; // Add this line
+        string imageUrl;
         uint256 cost;
         uint256 stock;
     }
 
     mapping(uint256 => Item) public items;
-    mapping(address => uint256) public orderCount;
+    mapping(address => uint256[]) public orders;
 
-    event Buy(address indexed buyer, uint256 itemId);
+    event Buy(address indexed buyer, uint256 itemId, uint256 quantity);
     event List(uint256 indexed itemId, string name, string imageUrl, uint256 cost, uint256 stock);
 
     modifier onlyOwner() {
@@ -30,48 +30,44 @@ contract Amazon {
     }
 
     function list(
-        uint256 _id,
         string memory _name,
         string memory _category,
-        string memory _imageUrl, // Include this parameter
+        string memory _imageUrl,
         uint256 _costWei,
         uint256 _stock
     ) public onlyOwner {
-        require(items[_id].id == 0, "Item already exists");
-
-        items[_id] = Item({
-            id: _id,
+        items[itemCount] = Item({
+            id: itemCount,
             name: _name,
             category: _category,
-            imageUrl: _imageUrl, // Store image URL
+            imageUrl: _imageUrl,
             cost: _costWei,
             stock: _stock
         });
 
-    itemCount++;
-        emit List(_id, _name, _imageUrl, _costWei, _stock); // Emit image URL
+        emit List(itemCount, _name, _imageUrl, _costWei, _stock);
+        itemCount++;
     }
 
+    function buy(uint256 _id, uint256 quantity) public payable {
+        require(items[_id].id != 0, "Item does not exist");
+        require(items[_id].stock >= quantity, "Insufficient stock");
+        require(msg.value >= items[_id].cost * quantity, "Not enough ether sent");
 
-    function buy(uint256 _id) public payable {
-        Item storage item = items[_id];
+        items[_id].stock -= quantity;
+        orders[msg.sender].push(_id);
 
-        require(item.id != 0, "Item does not exist");
-        require(msg.value >= item.cost, "Not enough ether to buy item");
-        require(item.stock > 0, "Item is out of stock");
-
-        item.stock--;
-        orderCount[msg.sender]++;
-        emit Buy(msg.sender, _id);
-
-        // Transfer the amount to owner
+        emit Buy(msg.sender, _id, quantity);
         payable(owner).transfer(msg.value);
     }
 
     function withdraw() public onlyOwner {
         uint256 balance = address(this).balance;
         require(balance > 0, "Balance is 0");
-
         payable(owner).transfer(balance);
+    }
+
+    function getOrders(address user) public view returns (uint256[] memory) {
+        return orders[user];
     }
 }
