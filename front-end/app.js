@@ -320,17 +320,23 @@ async function loadProducts() {
   }
 }
 
-async function buyProduct(id) {
-    const item = await AmazonContract.methods.items(id).call();
-    const accounts = await web3.eth.getAccounts();
-    try {
-        await AmazonContract.methods.buy(id).send({ from: accounts[0], value: item.cost });
-        alert('Product purchased successfully!');
-        loadProducts();
-    } catch (error) {
-        console.error('Error purchasing product:', error);
-    }
+async function buyProduct(id, quantity = 1) {
+  const item = await AmazonContract.methods.items(id).call();
+  const accounts = await web3.eth.getAccounts();
+  // Assuming that `item.cost` is already in Wei and needs to be multiplied by quantity.
+  const totalCostInWei = BigInt(item.cost) * BigInt(quantity);
+  const costInWeiString = totalCostInWei.toString(); // Convert BigInt to string for the send method.
+
+  try {
+      await AmazonContract.methods.buy(id, quantity).send({ from: accounts[0], value: costInWeiString });
+      alert('Product purchased successfully!');
+      loadProducts(); // Refresh products to reflect inventory change.
+  } catch (error) {
+      console.error('Error purchasing product:', error);
+      alert('Error purchasing product: ' + error.message);
+  }
 }
+
 
 async function uploadImage(file) {
   const formData = new FormData();
@@ -432,11 +438,12 @@ function createItemElement(item) {
   const itemElement = document.createElement('div');
   itemElement.className = 'product';
   itemElement.innerHTML = `
-    <img src="${item.imageUrl || 'https://via.placeholder.com/150'}" alt="${item.name}" style="width:100px;height:100px;">
-    <h3>${item.name}</h3>
-    <p>Price: ${web3.utils.fromWei(item.cost, 'ether')} ETH</p>
-    <p>Stock: ${item.stock}</p>
-    <button onclick="buyProduct(${item.id})">Buy</button>
+      <img src="${item.imageUrl || 'https://via.placeholder.com/150'}" alt="${item.name}" style="width:100px;height:100px;">
+      <h3>${item.name}</h3>
+      <p>Price: ${web3.utils.fromWei(item.cost, 'ether')} ETH</p>
+      <p>Stock: ${item.stock}</p>
+      <button onclick="addToCart(${item.id})">Add to Cart</button>
+      <button onclick="buyProduct(${item.id}, 1)">Buy Now</button>
   `;
   return itemElement;
 }
@@ -502,52 +509,49 @@ function handleAccountsChanged(accounts) {
 
 let shoppingCart = [];
 
-// Add to cart functionality
-function addToCart(itemId, quantity) {
-  // Find the item in the cart
-  const itemIndex = shoppingCart.findIndex((item) => item.id === itemId);
-
-  if (itemIndex > -1) {
-    // If the item exists, update the quantity
-    shoppingCart[itemIndex].quantity += quantity;
+// Function to add an item to the shopping cart
+function addToCart(id, quantity = 1) { // Set default quantity to 1
+  const productIndex = shoppingCart.findIndex((item) => item.id === id);
+  if (productIndex !== -1) {
+    // If the item is already in the cart, update the quantity
+    shoppingCart[productIndex].quantity += quantity;
   } else {
-    // If the item doesn't exist, add it to the cart
-    shoppingCart.push({ id: itemId, quantity: quantity });
+    // If the item is not in the cart, add it with the specified quantity
+    shoppingCart.push({ id, quantity });
   }
-
-  // Update the cart display
   updateCartDisplay();
 }
 
-// Remove item from cart
-function removeFromCart(itemId) {
-  shoppingCart = shoppingCart.filter(item => item.id !== itemId);
-  // Update the cart display here
+// Function to remove an item from the shopping cart
+function removeFromCart(id) {
+  shoppingCart = shoppingCart.filter((item) => item.id !== id);
+  updateCartDisplay();
 }
 
 // Checkout function
 async function checkout() {
   if (!userAccount) {
-    alert('Please connect your wallet first!');
-    return;
+      alert('Please connect your wallet first!');
+      return;
   }
 
-  // Start a batch transaction
   for (const cartItem of shoppingCart) {
-    const item = await AmazonContract.methods.items(cartItem.id).call();
-    const costInWei = web3.utils.toWei(item.cost.toString(), 'ether') * cartItem.quantity;
+      const item = await AmazonContract.methods.items(cartItem.id).call();
+      const itemCost = BigInt(item.cost);
+      const quantity = BigInt(cartItem.quantity);
+      const totalCost = itemCost * quantity;
+      const costInWei = web3.utils.toWei(totalCost.toString(), 'wei');
 
-    try {
-      await AmazonContract.methods.buy(cartItem.id, cartItem.quantity)
-        .send({ from: userAccount, value: costInWei });
-      // Provide feedback for successful purchase
-    } catch (error) {
-      // Handle errors, such as insufficient funds or stock
-    }
+      try {
+          await AmazonContract.methods.buy(cartItem.id, cartItem.quantity)
+              .send({ from: userAccount, value: costInWei.toString() });
+          alert(`Successfully purchased ${cartItem.quantity} of item ID ${cartItem.id}`);
+      } catch (error) {
+          alert(`Failed to purchase item ID ${cartItem.id}: ${error.message}`);
+      }
   }
 
-  // Clear the shopping cart after checkout
-  shoppingCart = [];
+  shoppingCart = []; // Clear the cart after checkout
   updateCartDisplay();
 }
 
@@ -564,9 +568,15 @@ async function fetchOrderHistory() {
 // Function to display shopping cart
 function updateCartDisplay() {
   const cartDiv = document.getElementById('shoppingCart');
-  cartDiv.innerHTML = shoppingCart.map(item =>
-      `<div>${item.id}: ${item.quantity}</div>`
-  ).join('');
+  cartDiv.innerHTML = ''; // Clear the shopping cart div
+  shoppingCart.forEach((item) => {
+      const itemDiv = document.createElement('div');
+      itemDiv.innerHTML = `
+          Item ID: ${item.id}, Quantity: ${item.quantity}
+          <button onclick="removeFromCart(${item.id})">Remove</button>
+      `;
+      cartDiv.appendChild(itemDiv);
+  });
 }
 
 window.addEventListener('load', initializeApp);
