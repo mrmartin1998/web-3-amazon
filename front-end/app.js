@@ -1,272 +1,546 @@
 let AmazonContract;
 
+const amazonContractAddress = '0xdBb7BB8f03FFa9A4049B120D2Bc7C70d0500A53F'; // Your Amazon contract address
+const amazonContractABI = [
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "itemId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "quantity",
+        "type": "uint256"
+      }
+    ],
+    "name": "Buy",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "itemId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "imageUrl",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "cost",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "stock",
+        "type": "uint256"
+      }
+    ],
+    "name": "List",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "itemId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "street",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "city",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "postalCode",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "country",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "shipped",
+        "type": "bool"
+      }
+    ],
+    "name": "ShippingUpdated",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "itemCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function",
+    "constant": true
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "items",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "category",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "imageUrl",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "cost",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "stock",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address payable",
+        "name": "seller",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function",
+    "constant": true
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "orders",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function",
+    "constant": true
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function",
+    "constant": true
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "shippingDetails",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "street",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "city",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "postalCode",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "country",
+        "type": "string"
+      },
+      {
+        "internalType": "bool",
+        "name": "shipped",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function",
+    "constant": true
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_category",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_imageUrl",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_costWei",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_stock",
+        "type": "uint256"
+      }
+    ],
+    "name": "list",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "quantity",
+        "type": "uint256"
+      }
+    ],
+    "name": "buy",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function",
+    "payable": true
+  },
+  {
+    "inputs": [],
+    "name": "withdraw",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "getOrders",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function",
+    "constant": true
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "quantity",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "tokenAddress",
+        "type": "address"
+      }
+    ],
+    "name": "buyWithToken",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_street",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_city",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_postalCode",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_country",
+        "type": "string"
+      }
+    ],
+    "name": "setShippingInfo",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
+      }
+    ],
+    "name": "markAsShipped",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+];
+const erc20ABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "transfer",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "approve",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "transferFrom",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "balanceOf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
 async function initializeWeb3() {
-    if (window.ethereum) {
-        window.web3 = new Web3(window.ethereum);
-        try {
-            await window.ethereum.request({ method: 'eth_requestAccounts' });
-        } catch (error) {
-            console.error('User denied account access:', error);
-            return false;
-        }
-    } else if (window.web3) {
-        window.web3 = new Web3(web3.currentProvider);
-    } else {
-        alert('Non-Ethereum browser detected. Consider trying MetaMask!');
-        return false;
-    }
-    return true;
+  if (window.ethereum) {
+      window.web3 = new Web3(window.ethereum);
+      try {
+          await window.ethereum.request({ method: 'eth_requestAccounts' });
+      } catch (error) {
+          console.error('User denied account access:', error);
+          return false;
+      }
+  } else if (window.web3) {
+      window.web3 = new Web3(web3.currentProvider);
+  } else {
+      alert('Non-Ethereum browser detected. Consider trying MetaMask!');
+      return false;
+  }
+  return true;
 }
 
 async function initializeContract() {
-    const contractAddress = '0xA9cA45fe53C2f2bf923aeB2664760d1eD167cA1e'; // Update with your contract address
-    const contractABI = [
-      {
-        "inputs": [],
-        "stateMutability": "nonpayable",
-        "type": "constructor"
-      },
-      {
-        "anonymous": false,
-        "inputs": [
-          {
-            "indexed": true,
-            "internalType": "address",
-            "name": "buyer",
-            "type": "address"
-          },
-          {
-            "indexed": false,
-            "internalType": "uint256",
-            "name": "itemId",
-            "type": "uint256"
-          },
-          {
-            "indexed": false,
-            "internalType": "uint256",
-            "name": "quantity",
-            "type": "uint256"
-          }
-        ],
-        "name": "Buy",
-        "type": "event"
-      },
-      {
-        "anonymous": false,
-        "inputs": [
-          {
-            "indexed": true,
-            "internalType": "uint256",
-            "name": "itemId",
-            "type": "uint256"
-          },
-          {
-            "indexed": false,
-            "internalType": "string",
-            "name": "name",
-            "type": "string"
-          },
-          {
-            "indexed": false,
-            "internalType": "string",
-            "name": "imageUrl",
-            "type": "string"
-          },
-          {
-            "indexed": false,
-            "internalType": "uint256",
-            "name": "cost",
-            "type": "uint256"
-          },
-          {
-            "indexed": false,
-            "internalType": "uint256",
-            "name": "stock",
-            "type": "uint256"
-          }
-        ],
-        "name": "List",
-        "type": "event"
-      },
-      {
-        "inputs": [],
-        "name": "itemCount",
-        "outputs": [
-          {
-            "internalType": "uint256",
-            "name": "",
-            "type": "uint256"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function",
-        "constant": true
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "uint256",
-            "name": "",
-            "type": "uint256"
-          }
-        ],
-        "name": "items",
-        "outputs": [
-          {
-            "internalType": "uint256",
-            "name": "id",
-            "type": "uint256"
-          },
-          {
-            "internalType": "string",
-            "name": "name",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "category",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "imageUrl",
-            "type": "string"
-          },
-          {
-            "internalType": "uint256",
-            "name": "cost",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "stock",
-            "type": "uint256"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function",
-        "constant": true
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "address",
-            "name": "",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "",
-            "type": "uint256"
-          }
-        ],
-        "name": "orders",
-        "outputs": [
-          {
-            "internalType": "uint256",
-            "name": "",
-            "type": "uint256"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function",
-        "constant": true
-      },
-      {
-        "inputs": [],
-        "name": "owner",
-        "outputs": [
-          {
-            "internalType": "address",
-            "name": "",
-            "type": "address"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function",
-        "constant": true
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "string",
-            "name": "_name",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "_category",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "_imageUrl",
-            "type": "string"
-          },
-          {
-            "internalType": "uint256",
-            "name": "_costWei",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "_stock",
-            "type": "uint256"
-          }
-        ],
-        "name": "list",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "uint256",
-            "name": "_id",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "quantity",
-            "type": "uint256"
-          }
-        ],
-        "name": "buy",
-        "outputs": [],
-        "stateMutability": "payable",
-        "type": "function",
-        "payable": true
-      },
-      {
-        "inputs": [],
-        "name": "withdraw",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "address",
-            "name": "user",
-            "type": "address"
-          }
-        ],
-        "name": "getOrders",
-        "outputs": [
-          {
-            "internalType": "uint256[]",
-            "name": "",
-            "type": "uint256[]"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function",
-        "constant": true
-      }
-    ];
-    AmazonContract = new web3.eth.Contract(contractABI, contractAddress);
+if (!window.web3) return;
+AmazonContract = new web3.eth.Contract(amazonContractABI, amazonContractAddress);
+console.log('Amazon Contract initialized:', AmazonContract);
 }
 
 async function addProduct() {
@@ -337,6 +611,46 @@ async function buyProduct(id, quantity = 1) {
   }
 }
 
+async function buyProductWithToken(id, quantity, tokenAddress) {
+  const item = await AmazonContract.methods.items(id).call();
+  const accounts = await web3.eth.getAccounts();
+  const totalCost = BigInt(item.cost) * BigInt(quantity);
+
+  try {
+      const tokenContract = new web3.eth.Contract(erc20ABI, tokenAddress);
+      await tokenContract.methods.approve(AmazonContract.options.address, totalCost.toString()).send({ from: accounts[0] });
+      await AmazonContract.methods.buyWithToken(id, quantity, tokenAddress).send({ from: accounts[0] });
+      alert('Product purchased successfully with token!');
+      loadProducts();  // Refresh the product list
+  } catch (error) {
+      console.error('Error purchasing product with token:', error);
+      alert('Error purchasing product with token: ' + error.message);
+  }
+}
+
+// Function to set shipping information
+async function setShippingInfo(itemId, name, street, city, postalCode, country) {
+  const accounts = await web3.eth.getAccounts();
+  try {
+      await AmazonContract.methods.setShippingInfo(itemId, name, street, city, postalCode, country).send({ from: accounts[0] });
+      alert('Shipping information updated successfully!');
+  } catch (error) {
+      console.error('Error updating shipping information:', error);
+      alert('Error updating shipping information: ' + error.message);
+  }
+}
+
+// Function to mark an item as shipped
+async function markAsShipped(itemId) {
+  const accounts = await web3.eth.getAccounts();
+  try {
+      await AmazonContract.methods.markAsShipped(itemId).send({ from: accounts[0] });
+      alert('Item marked as shipped successfully!');
+  } catch (error) {
+      console.error('Error marking item as shipped:', error);
+      alert('Error marking item as shipped: ' + error.message);
+  }
+}
 
 async function uploadImage(file) {
   const formData = new FormData();
@@ -440,12 +754,19 @@ function createItemElement(item) {
   itemElement.innerHTML = `
       <img src="${item.imageUrl || 'https://via.placeholder.com/150'}" alt="${item.name}" style="width:100px;height:100px;">
       <h3>${item.name}</h3>
+      <p>Seller: ${item.seller}</p>
       <p>Price: ${web3.utils.fromWei(item.cost, 'ether')} ETH</p>
       <p>Stock: ${item.stock}</p>
       <button onclick="addToCart(${item.id})">Add to Cart</button>
-      <button onclick="buyProduct(${item.id}, 1)">Buy Now</button>
+      <button onclick="buyProduct(${item.id}, 1)">Buy Now with ETH</button>
+      <button onclick="buyProductWithToken(${item.id}, 1, 'Token_Address')">Buy Now with Token</button>
+      <button onclick="showSetShipping(${item.id})">Set Shipping Info</button>
   `;
   return itemElement;
+}
+
+function showSetShipping(itemId) {
+  // Code to display UI for setting shipping information
 }
 
 let userAccount = null;
@@ -456,6 +777,7 @@ async function connectWallet() {
           const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
           userAccount = accounts[0];
           await displayAccountInfo(userAccount);
+          await fetchOrderHistory();  // Fetch order history after connecting wallet
           window.ethereum.on('accountsChanged', handleAccountsChanged);
       } catch (error) {
           if (error.code === 4001) {
@@ -480,11 +802,14 @@ async function handleAccountsChanged(accounts) {
 }
 
 async function displayAccountInfo(account) {
-  document.getElementById('walletAddress').innerText = `Connected account: ${account}`;
-  // Fetch the balance of the connected account
+  const walletAddressDiv = document.getElementById('walletAddress');
+  const walletBalanceDiv = document.getElementById('walletBalance');
+
   const balanceWei = await web3.eth.getBalance(account);
   const balanceEth = web3.utils.fromWei(balanceWei, 'ether');
-  document.getElementById('walletBalance').innerText = `Balance: ${balanceEth} ETH`;
+
+  walletAddressDiv.innerText = `Connected account: ${account}`;
+  walletBalanceDiv.innerText = `Balance: ${balanceEth} ETH`;
 }
 
 // Add this function to update the user's balance when their account changes
@@ -557,12 +882,36 @@ async function checkout() {
 
 // Fetch order history (you will need to implement this according to your smart contract events)
 async function fetchOrderHistory() {
+  if (!userAccount) {
+      alert('Please connect your wallet first!');
+      return;
+  }
+  
   const buyEvents = await AmazonContract.getPastEvents('Buy', {
-    filter: { buyer: userAccount },
-    fromBlock: 0,
-    toBlock: 'latest'
+      filter: { buyer: userAccount },
+      fromBlock: 0,
+      toBlock: 'latest'
   });
-  // Process these buyEvents to display the order history
+
+  // Process and display these events in the UI
+  displayOrderHistory(buyEvents);
+}
+
+function displayOrderHistory(events) {
+  const orderHistoryDiv = document.getElementById('orderHistory');
+  console.log('Displaying order history:', events);
+  orderHistoryDiv.innerHTML = ''; // Clear previous entries
+
+  events.forEach(event => {
+      const { itemId, quantity, buyer } = event.returnValues;
+      const orderElement = document.createElement('div');
+      orderElement.innerHTML = `
+          <p>Item ID: ${itemId}</p>
+          <p>Quantity: ${quantity}</p>
+          <p>Buyer: ${buyer}</p>
+      `;
+      orderHistoryDiv.appendChild(orderElement);
+  });
 }
 
 // Function to display shopping cart
