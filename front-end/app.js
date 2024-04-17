@@ -538,7 +538,6 @@ async function initializeWeb3() {
 }
 
 async function initializeContract() {
-<<<<<<< HEAD
     const contractAddress = '0x0Af9326fE21F49f622aBd8acC4869eE0D7Ddd666'; // Update with your contract address
     const contractABI = [
       {
@@ -946,11 +945,6 @@ async function initializeContract() {
       }
     ];
     AmazonContract = new web3.eth.Contract(contractABI, contractAddress);
-=======
-if (!window.web3) return;
-AmazonContract = new web3.eth.Contract(amazonContractABI, amazonContractAddress);
-console.log('Amazon Contract initialized:', AmazonContract);
->>>>>>> 76c170b171dd8f1fe2490ddbb83e72226eeb5c03
 }
 
 async function addProduct() {
@@ -1024,50 +1018,6 @@ async function buyProduct(id, quantity = 1) {
   }
 }
 
-<<<<<<< HEAD
-=======
-async function buyProductWithToken(id, quantity, tokenAddress) {
-  const item = await AmazonContract.methods.items(id).call();
-  const accounts = await web3.eth.getAccounts();
-  const totalCost = BigInt(item.cost) * BigInt(quantity);
-
-  try {
-      const tokenContract = new web3.eth.Contract(erc20ABI, tokenAddress);
-      await tokenContract.methods.approve(AmazonContract.options.address, totalCost.toString()).send({ from: accounts[0] });
-      await AmazonContract.methods.buyWithToken(id, quantity, tokenAddress).send({ from: accounts[0] });
-      alert('Product purchased successfully with token!');
-      loadProducts();  // Refresh the product list
-  } catch (error) {
-      console.error('Error purchasing product with token:', error);
-      alert('Error purchasing product with token: ' + error.message);
-  }
-}
-
-// Function to set shipping information
-async function setShippingInfo(itemId, name, street, city, postalCode, country) {
-  const accounts = await web3.eth.getAccounts();
-  try {
-      await AmazonContract.methods.setShippingInfo(itemId, name, street, city, postalCode, country).send({ from: accounts[0] });
-      alert('Shipping information updated successfully!');
-  } catch (error) {
-      console.error('Error updating shipping information:', error);
-      alert('Error updating shipping information: ' + error.message);
-  }
-}
-
-// Function to mark an item as shipped
-async function markAsShipped(itemId) {
-  const accounts = await web3.eth.getAccounts();
-  try {
-      await AmazonContract.methods.markAsShipped(itemId).send({ from: accounts[0] });
-      alert('Item marked as shipped successfully!');
-  } catch (error) {
-      console.error('Error marking item as shipped:', error);
-      alert('Error marking item as shipped: ' + error.message);
-  }
-}
-
->>>>>>> 76c170b171dd8f1fe2490ddbb83e72226eeb5c03
 async function uploadImage(file) {
   const formData = new FormData();
   formData.append('image', file);
