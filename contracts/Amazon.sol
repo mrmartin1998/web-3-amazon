@@ -1,13 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-interface IERC20 {
-    function transfer(address to, uint256 amount) external returns (bool);
-    function approve(address spender, uint256 amount) external returns (bool);
-    function transferFrom(address from, address to, uint256 amount) external returns (bool);
-    function balanceOf(address owner) external view returns (uint256);
-}
-
 contract Amazon {
     address public owner;
     uint256 public itemCount = 1;  // Start from 1 to avoid zero initialization issues
@@ -32,7 +25,7 @@ contract Amazon {
 
     mapping(uint256 => Item) public items;
     mapping(address => uint256[]) public orders;
-    mapping(address => ShippingInfo) public shippingInfo; // Each user's shipping information
+    mapping(address => ShippingInfo) public shippingInfo;
 
     event ItemListed(uint256 indexed itemId, string name, string imageUrl, uint256 cost, uint256 stock, address indexed seller);
     event ItemPurchased(address indexed buyer, uint256 itemId, uint256 quantity);
@@ -40,11 +33,6 @@ contract Amazon {
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only the owner can call this function.");
-        _;
-    }
-
-    modifier onlySellerOrOwner(uint256 itemId) {
-        require(msg.sender == items[itemId].seller || msg.sender == owner, "Not authorized");
         _;
     }
 
@@ -79,7 +67,13 @@ contract Amazon {
         item.seller.transfer(msg.value);
     }
 
-    function setShippingInfo(string memory _name, string memory _street, string memory _city, string memory _postalCode, string memory _country) public {
+    function setShippingInfo(
+        string memory _name,
+        string memory _street,
+        string memory _city,
+        string memory _postalCode,
+        string memory _country
+    ) public {
         shippingInfo[msg.sender] = ShippingInfo(_name, _street, _city, _postalCode, _country);
         emit ShippingInfoUpdated(msg.sender, _name, _street, _city, _postalCode, _country);
     }
