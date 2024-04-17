@@ -15,6 +15,17 @@
         <div id="walletBalance"></div>
     </div>
 
+    <form onsubmit="event.preventDefault(); setShippingInfo();">
+        <input type="text" id="name" placeholder="Full Name" required>
+        <input type="text" id="street" placeholder="Street Address" required>
+        <input type="text" id="city" placeholder="City" required>
+        <input type="text" id="postalCode" placeholder="Postal Code" required>
+        <input type="text" id="country" placeholder="Country" required>
+        <button type="submit">Update Shipping Info</button>
+    </form>
+    <button onclick="displayShippingInfo()">Display My Shipping Info</button>
+
+
     <div id="shoppingCart">
         <!-- Shopping cart items will be dynamically inserted here -->
     </div>

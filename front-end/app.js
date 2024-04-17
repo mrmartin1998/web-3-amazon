@@ -19,37 +19,12 @@ async function initializeWeb3() {
 }
 
 async function initializeContract() {
-    const contractAddress = '0xA9cA45fe53C2f2bf923aeB2664760d1eD167cA1e'; // Update with your contract address
+    const contractAddress = '0x0Af9326fE21F49f622aBd8acC4869eE0D7Ddd666'; // Update with your contract address
     const contractABI = [
       {
         "inputs": [],
         "stateMutability": "nonpayable",
         "type": "constructor"
-      },
-      {
-        "anonymous": false,
-        "inputs": [
-          {
-            "indexed": true,
-            "internalType": "address",
-            "name": "buyer",
-            "type": "address"
-          },
-          {
-            "indexed": false,
-            "internalType": "uint256",
-            "name": "itemId",
-            "type": "uint256"
-          },
-          {
-            "indexed": false,
-            "internalType": "uint256",
-            "name": "quantity",
-            "type": "uint256"
-          }
-        ],
-        "name": "Buy",
-        "type": "event"
       },
       {
         "anonymous": false,
@@ -83,9 +58,83 @@ async function initializeContract() {
             "internalType": "uint256",
             "name": "stock",
             "type": "uint256"
+          },
+          {
+            "indexed": true,
+            "internalType": "address",
+            "name": "seller",
+            "type": "address"
           }
         ],
-        "name": "List",
+        "name": "ItemListed",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": true,
+            "internalType": "address",
+            "name": "buyer",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "itemId",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "quantity",
+            "type": "uint256"
+          }
+        ],
+        "name": "ItemPurchased",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": true,
+            "internalType": "address",
+            "name": "user",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "indexed": false,
+            "internalType": "string",
+            "name": "street",
+            "type": "string"
+          },
+          {
+            "indexed": false,
+            "internalType": "string",
+            "name": "city",
+            "type": "string"
+          },
+          {
+            "indexed": false,
+            "internalType": "string",
+            "name": "postalCode",
+            "type": "string"
+          },
+          {
+            "indexed": false,
+            "internalType": "string",
+            "name": "country",
+            "type": "string"
+          }
+        ],
+        "name": "ShippingInfoUpdated",
         "type": "event"
       },
       {
@@ -141,6 +190,11 @@ async function initializeContract() {
             "internalType": "uint256",
             "name": "stock",
             "type": "uint256"
+          },
+          {
+            "internalType": "address payable",
+            "name": "seller",
+            "type": "address"
           }
         ],
         "stateMutability": "view",
@@ -189,6 +243,46 @@ async function initializeContract() {
       {
         "inputs": [
           {
+            "internalType": "address",
+            "name": "",
+            "type": "address"
+          }
+        ],
+        "name": "shippingInfo",
+        "outputs": [
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "street",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "city",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "postalCode",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "country",
+            "type": "string"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function",
+        "constant": true
+      },
+      {
+        "inputs": [
+          {
             "internalType": "string",
             "name": "_name",
             "type": "string"
@@ -212,6 +306,11 @@ async function initializeContract() {
             "internalType": "uint256",
             "name": "_stock",
             "type": "uint256"
+          },
+          {
+            "internalType": "address payable",
+            "name": "_seller",
+            "type": "address"
           }
         ],
         "name": "list",
@@ -228,7 +327,7 @@ async function initializeContract() {
           },
           {
             "internalType": "uint256",
-            "name": "quantity",
+            "name": "_quantity",
             "type": "uint256"
           }
         ],
@@ -239,8 +338,34 @@ async function initializeContract() {
         "payable": true
       },
       {
-        "inputs": [],
-        "name": "withdraw",
+        "inputs": [
+          {
+            "internalType": "string",
+            "name": "_name",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "_street",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "_city",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "_postalCode",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "_country",
+            "type": "string"
+          }
+        ],
+        "name": "setShippingInfo",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -249,45 +374,82 @@ async function initializeContract() {
         "inputs": [
           {
             "internalType": "address",
-            "name": "user",
+            "name": "_user",
             "type": "address"
           }
         ],
-        "name": "getOrders",
+        "name": "getShippingInfo",
         "outputs": [
           {
-            "internalType": "uint256[]",
+            "components": [
+              {
+                "internalType": "string",
+                "name": "name",
+                "type": "string"
+              },
+              {
+                "internalType": "string",
+                "name": "street",
+                "type": "string"
+              },
+              {
+                "internalType": "string",
+                "name": "city",
+                "type": "string"
+              },
+              {
+                "internalType": "string",
+                "name": "postalCode",
+                "type": "string"
+              },
+              {
+                "internalType": "string",
+                "name": "country",
+                "type": "string"
+              }
+            ],
+            "internalType": "struct Amazon.ShippingInfo",
             "name": "",
-            "type": "uint256[]"
+            "type": "tuple"
           }
         ],
         "stateMutability": "view",
         "type": "function",
         "constant": true
+      },
+      {
+        "inputs": [],
+        "name": "withdraw",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
       }
     ];
     AmazonContract = new web3.eth.Contract(contractABI, contractAddress);
 }
 
 async function addProduct() {
-  const id = document.getElementById('productId').value;
   const name = document.getElementById('productName').value;
   const category = document.getElementById('productCategory').value;
   const cost = document.getElementById('productCost').value; // assuming this is already in ETH
   const stock = document.getElementById('productStock').value;
-
-  const costInWei = web3.utils.toWei(cost, 'ether');
   const imageUrl = "https://via.placeholder.com/150"; // Placeholder image URL
 
-  const accounts = await web3.eth.getAccounts();
+  // Convert ETH to Wei for the transaction
+  const costInWei = web3.utils.toWei(cost, 'ether');
+
   try {
-      await AmazonContract.methods.list(name, category, imageUrl, costInWei, stock).send({ from: accounts[0] });
+      const accounts = await web3.eth.getAccounts();
+      // Ensure you are using the correct function name and parameters as defined in your contract
+      await AmazonContract.methods.list(name, category, imageUrl, costInWei, stock, accounts[0]).send({ from: accounts[0] });
       alert('Product added successfully!');
       loadProducts(); // Refresh the product list
   } catch (error) {
       console.error('Error while adding product:', error);
+      alert('Error while adding product: ' + error.message);
   }
 }
+
 
 async function loadProducts() {
   try {
@@ -336,7 +498,6 @@ async function buyProduct(id, quantity = 1) {
       alert('Error purchasing product: ' + error.message);
   }
 }
-
 
 async function uploadImage(file) {
   const formData = new FormData();
@@ -578,5 +739,44 @@ function updateCartDisplay() {
       cartDiv.appendChild(itemDiv);
   });
 }
+
+async function setShippingInfo() {
+  const name = document.getElementById('name').value;
+  const street = document.getElementById('street').value;
+  const city = document.getElementById('city').value;
+  const postalCode = document.getElementById('postalCode').value;
+  const country = document.getElementById('country').value;
+
+  const accounts = await web3.eth.getAccounts();
+  try {
+      await AmazonContract.methods.setShippingInfo(name, street, city, postalCode, country).send({ from: accounts[0] });
+      alert('Shipping information updated successfully.');
+  } catch (error) {
+      console.error('Failed to set shipping information:', error);
+      alert('Failed to set shipping information: ' + error.message);
+  }
+}
+
+async function markItemAsShipped(itemId) {
+  const accounts = await web3.eth.getAccounts();
+  try {
+      await AmazonContract.methods.markAsShipped(itemId).send({ from: accounts[0] });
+      alert('Item marked as shipped successfully!');
+  } catch (error) {
+      console.error('Error marking item as shipped:', error);
+      alert('Error marking item as shipped: ' + error.message);
+  }
+}
+
+async function displayShippingInfo() {
+  const accounts = await web3.eth.getAccounts();
+  try {
+      const info = await AmazonContract.methods.getShippingInfo(accounts[0]).call();
+      alert(`Shipping Info - Name: ${info.name}, Street: ${info.street}, City: ${info.city}, Postal Code: ${info.postalCode}, Country: ${info.country}`);
+  } catch (error) {
+      console.error('Failed to retrieve shipping information:', error);
+  }
+}
+
 
 window.addEventListener('load', initializeApp);
