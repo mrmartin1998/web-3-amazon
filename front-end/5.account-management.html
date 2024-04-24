@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web3 Amazon</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body id="accout-management">
+    <h1>Welcome to Web3 Amazon</h1>
+    <nav>
+        <ul>
+            <li><a href="1.home.html">Home</a></li>
+            <li><a href="2.product.html">Product</a></li>
+            <li><a href="3.add-product.html">Add product</a></li>
+            <li><a href="4.order-history.html">Order history</a></li>
+            <li><a href="5.account-management.html">Account management</a></li>
+            <li><a href="6.about.html">About</a></li>
+        </ul>
+    </nav>
+    <button id="connectWalletButton" onclick="connectWallet()">Connect Wallet</button>
+    <div id="walletInfo">
+        <div id="walletAddress"></div>
+        <div id="walletBalance"></div>
+    </div>
+
+    <h2>Account management</h2>
+
+    <form onsubmit="event.preventDefault(); setShippingInfo();">
+        <input type="text" id="name" placeholder="Full Name" required>
+        <input type="text" id="street" placeholder="Street Address" required>
+        <input type="text" id="city" placeholder="City" required>
+        <input type="text" id="postalCode" placeholder="Postal Code" required>
+        <input type="text" id="country" placeholder="Country" required>
+        <button type="submit">Update Shipping Info</button>
+    </form>
+    <button onclick="displayShippingInfo()">Display My Shipping Info</button>
+
+    <div id="shippingModal" style="display:none;">
+        <h3>Set Shipping Information</h3>
+        <input type="text" id="shippingName" placeholder="Recipient Name">
+        <input type="text" id="shippingStreet" placeholder="Street">
+        <input type="text" id="shippingCity" placeholder="City">
+        <input type="text" id="shippingPostalCode" placeholder="Postal Code">
+        <input type="text" id="shippingCountry" placeholder="Country">
+        <button onclick="submitShippingInfo()">Submit Shipping Info</button>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; web3 amazon.</p>
+        <p>Contact us at [email protected]</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3/dist/web3.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

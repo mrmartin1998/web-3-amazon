@@ -428,7 +428,6 @@ async function initializeWeb3() {
   return true;
 }
 
-
 async function addProduct() {
   const name = document.getElementById('productName').value;
   const category = document.getElementById('productCategory').value;
@@ -441,16 +440,15 @@ async function addProduct() {
 
   try {
       const accounts = await web3.eth.getAccounts();
-      // Ensure you are using the correct function name and parameters as defined in your contract
       await AmazonContract.methods.list(name, category, imageUrl, costInWei, stock, accounts[0]).send({ from: accounts[0] });
-      alert('Product added successfully!');
-      loadProducts(); // Refresh the product list
+      
+      // Instead of alert, display a message on the page
+      document.getElementById('responseMessage').innerText = 'Product added successfully!';
   } catch (error) {
       console.error('Error while adding product:', error);
-      alert('Error while adding product: ' + error.message);
+      document.getElementById('responseMessage').innerText = 'Error while adding product: ' + error.message;
   }
 }
-
 
 async function loadProducts() {
   try {
@@ -605,6 +603,7 @@ function createItemElement(item) {
       <p>Price: ${web3.utils.fromWei(item.cost, 'ether')} ETH</p>
       <p>Stock: ${item.stock}</p>
       <button onclick="buyProduct(${item.id}, 1)">Buy Now</button>
+      <button onclick="addToCart(${item.id}, 1)">Add to Cart</button>
   `;
   return itemElement;
 }
@@ -615,7 +614,7 @@ function showSetShipping(itemId) {
 
 let userAccount = null;
 
-async function connectWallet() {
+async function connectWalletHistory() {
   if (window.ethereum) {
       try {
           const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -632,6 +631,25 @@ async function connectWallet() {
       }
   } else {
       alert('Please install MetaMask to use this feature!');
+  }
+}
+
+async function connectWallet() {
+  if (window.ethereum) {
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      userAccount = accounts[0];
+      await displayAccountInfo(userAccount);
+      window.ethereum.on('accountsChanged', handleAccountsChanged);
+    } catch (error) {
+      if (error.code === 4001) {
+        alert("Connection to MetaMask wallet was rejected by the user.");
+      } else {
+        console.error(error);
+      }
+    }
+  } else {
+    alert('Please install MetaMask to use this feature!');
   }
 }
 
@@ -725,10 +743,6 @@ async function checkout() {
 
 // Fetch order history (you will need to implement this according to your smart contract events)
 async function fetchOrderHistory() {
-  if (!userAccount) {
-      alert('Please connect your wallet first!');
-      return;
-  }
   
   try {
       const buyEvents = await AmazonContract.getPastEvents('ItemPurchased', {
@@ -745,21 +759,30 @@ async function fetchOrderHistory() {
   }
 }
 
-function displayOrderHistory(events) {
+async function displayOrderHistory(events) {
   const orderHistoryDiv = document.getElementById('orderHistory');
-  console.log('Displaying order history:', events);
   orderHistoryDiv.innerHTML = ''; // Clear previous entries
 
-  events.forEach(event => {
+  for (let event of events) {
       const { itemId, quantity, buyer } = event.returnValues;
-      const orderElement = document.createElement('div');
-      orderElement.innerHTML = `
-          <p>Item ID: ${itemId}</p>
-          <p>Quantity: ${quantity}</p>
-          <p>Buyer: ${buyer}</p>
-      `;
-      orderHistoryDiv.appendChild(orderElement);
-  });
+      try {
+          const item = await AmazonContract.methods.items(itemId).call();
+          const orderElement = document.createElement('div');
+          orderElement.innerHTML = `
+              <p>Product: ${item.name}</p>
+              <p>Item ID: ${itemId}</p>
+              <p>Quantity: ${quantity}</p>
+              <p>Cost: ${web3.utils.fromWei(item.cost, 'ether')} ETH</p>
+              <p>Seller: ${item.seller}</p>
+          `;
+          orderHistoryDiv.appendChild(orderElement);
+      } catch (error) {
+          console.error('Error fetching item details:', error);
+          const errorElement = document.createElement('div');
+          errorElement.innerHTML = `<p>Error loading details for item ID ${itemId}</p>`;
+          orderHistoryDiv.appendChild(errorElement);
+      }
+  }
 }
 
 // Function to display shopping cart
@@ -814,4 +837,33 @@ async function displayShippingInfo() {
   }
 }
 
-window.addEventListener('load', initializeApp);
+window.addEventListener('load', async function() {
+  if (await initializeWeb3()) {
+    switch (document.body.id) {
+      case "home":
+        // Functions to run on home page
+        break;
+      case "product":
+        initializeContract();
+        loadProducts();
+        break;
+      case "add-product":
+        initializeContract();
+        // No further action needed immediately
+        break;
+      case "order-history":
+        initializeContract();
+        fetchOrderHistory(); // Only call fetchOrderHistory here
+        break;
+      case "account-management":
+        initializeContract();
+        // Maybe load user-specific settings
+        break;
+      case "about":
+        // Informational page, likely no contract interactions needed
+        break;
+    }
+  } else {
+    console.error('Web3 initialization failed or not supported.');
+  }
+});

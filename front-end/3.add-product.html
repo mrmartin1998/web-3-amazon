@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web3 Amazon</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body id="add-product">
+    <h1>Welcome to Web3 Amazon</h1>
+    <nav>
+        <ul>
+            <li><a href="1.home.html">Home</a></li>
+            <li><a href="2.product.html">Product</a></li>
+            <li><a href="3.add-product.html">Add product</a></li>
+            <li><a href="4.order-history.html">Order history</a></li>
+            <li><a href="5.account-management.html">Account management</a></li>
+            <li><a href="6.about.html">About</a></li>
+        </ul>
+    </nav>
+    <button id="connectWalletButton" onclick="connectWallet()">Connect Wallet</button>
+    <div id="walletInfo">
+        <div id="walletAddress"></div>
+        <div id="walletBalance"></div>
+    </div>
+
+    <h2>Add product page</h2>
+    <p id="responseMessage">added product</p> <!-- Place for displaying messages -->
+
+    <form id="addProductForm" onsubmit="event.preventDefault(); addProduct();">
+        <input type="number" id="productId" placeholder="Product ID" required>
+        <input type="text" id="productName" placeholder="Product Name" required>
+        <input type="text" id="productCategory" placeholder="Category" required>
+        <input type="number" id="productCost" placeholder="Cost (in ETH)" step="0.00001" required>
+        <input type="number" id="productStock" placeholder="Stock" required>
+        <input type="file" id="productImage" accept="image/*" required>
+        <button type="submit">Add Product</button>
+    </form>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; web3 amazon.</p>
+        <p>Contact us at [email protected]</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3/dist/web3.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
