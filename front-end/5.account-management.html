@@ -7,7 +7,10 @@
     <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body id="accout-management">
-    <h1>Welcome to Web3 Amazon</h1>
+    <header>
+        <h1>Welcome to Web3 Amazon</h1>
+        <p>Your decentralized marketplace for secure and transparent transactions.</p>
+    </header>
     <nav>
         <ul>
             <li><a href="1.home.html">Home</a></li>
@@ -32,7 +35,8 @@
         <input type="text" id="city" placeholder="City" required>
         <input type="text" id="postalCode" placeholder="Postal Code" required>
         <input type="text" id="country" placeholder="Country" required>
-        <button type="submit">Update Shipping Info</button>
+        <button type="submit" id="updateShippingButton" disabled>Update Shipping Info</button>
+
     </form>
     <button onclick="displayShippingInfo()">Display My Shipping Info</button>
 

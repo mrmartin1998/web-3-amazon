@@ -1,7 +1,32 @@
 let AmazonContract;
 
+async function initializeWeb3() {
+  if (window.ethereum) {
+      window.web3 = new Web3(window.ethereum);
+      try {
+          await window.ethereum.request({ method: 'eth_requestAccounts' });
+          console.log('Web3 initialized');
+          return true;
+      } catch (error) {
+          console.error('User denied account access:', error);
+          return false;
+      }
+  } else if (window.web3) {
+      window.web3 = new Web3(web3.currentProvider);
+      console.log('Web3 initialized using current provider');
+      return true;
+  } else {
+      console.warn('Non-Ethereum browser detected. Consider trying MetaMask!');
+      return false;
+  }
+}
+
 async function initializeContract() {
-  const contractAddress = '0x10377B97FAcA6A500c391a398A1a999E4e0f6a28'; // Update with your contract address
+  if (!window.web3) {
+      console.warn('Web3 is not initialized. Skipping contract initialization.');
+      return;
+  }
+  const contractAddress = '0x10377B97FAcA6A500c391a398A1a999E4e0f6a28';
   const contractABI = [
     {
       "inputs": [],
@@ -408,25 +433,9 @@ async function initializeContract() {
     }
   ];
   AmazonContract = new web3.eth.Contract(contractABI, contractAddress);
+  console.log('Contract initialized');
 }
 
-async function initializeWeb3() {
-  if (window.ethereum) {
-      window.web3 = new Web3(window.ethereum);
-      try {
-          await window.ethereum.request({ method: 'eth_requestAccounts' });
-      } catch (error) {
-          console.error('User denied account access:', error);
-          return false;
-      }
-  } else if (window.web3) {
-      window.web3 = new Web3(web3.currentProvider);
-  } else {
-      alert('Non-Ethereum browser detected. Consider trying MetaMask!');
-      return false;
-  }
-  return true;
-}
 
 async function addProduct() {
   const name = document.getElementById('productName').value;
@@ -800,13 +809,24 @@ function updateCartDisplay() {
 }
 
 async function setShippingInfo() {
+  // Ensure the contract is initialized
+  if (!AmazonContract) {
+    console.error("Attempting to set shipping info without an initialized contract.");
+    await initializeContract();
+    if (!AmazonContract) {
+      alert("Failed to initialize the contract. Please ensure your wallet is connected.");
+      return;
+    }
+  }
+
+  // Proceed with setting the shipping info
   const name = document.getElementById('name').value;
   const street = document.getElementById('street').value;
   const city = document.getElementById('city').value;
   const postalCode = document.getElementById('postalCode').value;
   const country = document.getElementById('country').value;
-
   const accounts = await web3.eth.getAccounts();
+
   try {
       await AmazonContract.methods.setShippingInfo(name, street, city, postalCode, country).send({ from: accounts[0] });
       alert('Shipping information updated successfully.');
@@ -838,32 +858,51 @@ async function displayShippingInfo() {
 }
 
 window.addEventListener('load', async function() {
-  if (await initializeWeb3()) {
-    switch (document.body.id) {
-      case "home":
-        // Functions to run on home page
-        break;
-      case "product":
-        initializeContract();
-        loadProducts();
-        break;
-      case "add-product":
-        initializeContract();
-        // No further action needed immediately
-        break;
-      case "order-history":
-        initializeContract();
-        fetchOrderHistory(); // Only call fetchOrderHistory here
-        break;
-      case "account-management":
-        initializeContract();
-        // Maybe load user-specific settings
-        break;
-      case "about":
-        // Informational page, likely no contract interactions needed
-        break;
-    }
-  } else {
-    console.error('Web3 initialization failed or not supported.');
+  try {
+      const web3Loaded = await initializeWeb3();
+      if (!web3Loaded) {
+          console.error('Web3 initialization failed or not supported.');
+          alert('Please make sure your Ethereum wallet is connected.');
+          return;
+      }
+
+      await initializeContract();
+      if (!AmazonContract) {
+          console.error('Contract initialization failed.');
+          alert('Failed to initialize the contract.');
+          return;
+      }
+
+      // Enable any page-specific buttons if they exist
+      const updateShippingButton = document.getElementById('updateShippingButton');
+      if (updateShippingButton) {
+          updateShippingButton.disabled = false;
+      }
+
+      // Execute page-specific scripts
+      switch (document.body.id) {
+          case "home":
+              // Possibly call some functions specific to the Home page
+              break;
+          case "product":
+              loadProducts();
+              break;
+          case "add-product":
+              // No specific action required on load for add-product unless needed
+              break;
+          case "order-history":
+              connectWalletHistory().then(fetchOrderHistory);
+              break;
+          case "account-management":
+              // Account management specific scripts
+              break;
+          case "about":
+              // Code specific to the About page
+              break;
+      }
+  } catch (error) {
+      console.error('An error occurred during app initialization:', error);
+      alert('An error occurred. Please check the console for details.');
   }
 });
+
