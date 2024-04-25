@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web3 Amazon</title>
+    <title>Administrator Dashboard - Web3 Amazon</title>
     <link rel="stylesheet" type="text/css" href="style.css">
 </head>
-<body id="order-history">
+<body id="administrator">
     <header>
         <h1>Welcome to Web3 Amazon</h1>
         <p>Your decentralized marketplace for secure and transparent transactions.</p>
@@ -22,21 +22,20 @@
             <li><a href="7.about.html">About</a></li>
         </ul>
     </nav>
-    <button id="connectWalletButton" onclick="connectWalletHistory()">Connect Wallet</button>
-    <div id="walletInfo">
-        <div id="walletAddress"></div>
-        <div id="walletBalance"></div>
-    </div>
-
-    <h2>Order history</h2>
-    <div id="orderHistory"></div>
-
-    <!-- Footer -->
+    <main>
+        <section id="productManagement">
+            <h2>Product Management</h2>
+            <button onclick="loadAdminProducts()">Refresh Products</button>
+            <div id="productList"></div>
+        </section>
+        <section id="orderManagement">
+            <h2>Order History</h2>
+            <div id="orderHistory"></div>
+        </section>
+    </main>
     <footer>
-        <p>&copy; web3 amazon.</p>
-        <p>Contact us at [email protected]</p>
+        <p>&copy; Web3 Amazon. All rights reserved.</p>
     </footer>
-
     <script src="https://cdn.jsdelivr.net/npm/web3/dist/web3.min.js"></script>
     <script src="app.js"></script>
 </body>

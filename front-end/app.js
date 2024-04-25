@@ -26,12 +26,25 @@ async function initializeContract() {
       console.warn('Web3 is not initialized. Skipping contract initialization.');
       return;
   }
-  const contractAddress = '0x10377B97FAcA6A500c391a398A1a999E4e0f6a28';
+  const contractAddress = '0xC59D3bc2814dA228c461dc54526bbe1E30832978';
   const contractABI = [
     {
       "inputs": [],
       "stateMutability": "nonpayable",
       "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "itemId",
+          "type": "uint256"
+        }
+      ],
+      "name": "ItemDeleted",
+      "type": "event"
     },
     {
       "anonymous": false,
@@ -105,6 +118,32 @@ async function initializeContract() {
       "anonymous": false,
       "inputs": [
         {
+          "indexed": false,
+          "internalType": "address",
+          "name": "seller",
+          "type": "address"
+        }
+      ],
+      "name": "SellerAdded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "seller",
+          "type": "address"
+        }
+      ],
+      "name": "SellerRemoved",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
           "indexed": true,
           "internalType": "address",
           "name": "user",
@@ -143,6 +182,26 @@ async function initializeContract() {
       ],
       "name": "ShippingInfoUpdated",
       "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "isSeller",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [],
@@ -290,6 +349,32 @@ async function initializeContract() {
     {
       "inputs": [
         {
+          "internalType": "address",
+          "name": "_seller",
+          "type": "address"
+        }
+      ],
+      "name": "addSeller",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_seller",
+          "type": "address"
+        }
+      ],
+      "name": "removeSeller",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "string",
           "name": "_name",
           "type": "string"
@@ -313,11 +398,6 @@ async function initializeContract() {
           "internalType": "uint256",
           "name": "_stock",
           "type": "uint256"
-        },
-        {
-          "internalType": "address payable",
-          "name": "_seller",
-          "type": "address"
         }
       ],
       "name": "list",
@@ -430,12 +510,24 @@ async function initializeContract() {
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "itemId",
+          "type": "uint256"
+        }
+      ],
+      "name": "deleteItem",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     }
   ];
   AmazonContract = new web3.eth.Contract(contractABI, contractAddress);
   console.log('Contract initialized');
 }
-
 
 async function addProduct() {
   const name = document.getElementById('productName').value;
@@ -444,14 +536,15 @@ async function addProduct() {
   const stock = document.getElementById('productStock').value;
   const imageUrl = "https://via.placeholder.com/150"; // Placeholder image URL
 
-  // Convert ETH to Wei for the transaction
   const costInWei = web3.utils.toWei(cost, 'ether');
 
   try {
       const accounts = await web3.eth.getAccounts();
-      await AmazonContract.methods.list(name, category, imageUrl, costInWei, stock, accounts[0]).send({ from: accounts[0] });
-      
-      // Instead of alert, display a message on the page
+      if (!await AmazonContract.methods.isSeller(accounts[0]).call()) {
+          alert("You are not authorized to list products.");
+          return;
+      }
+      await AmazonContract.methods.list(name, category, imageUrl, costInWei, stock).send({ from: accounts[0] });
       document.getElementById('responseMessage').innerText = 'Product added successfully!';
   } catch (error) {
       console.error('Error while adding product:', error);
@@ -530,12 +623,23 @@ async function uploadImage(file) {
 }
 
 async function initializeApp() {
-    if (!await initializeWeb3()) {
-        console.error('Web3 initialization failed');
-        return;
-    }
-    await initializeContract();
-    loadProducts();
+  if (!await initializeWeb3()) {
+      console.error('Web3 initialization failed');
+      alert('Please ensure your Ethereum wallet is connected.');
+      return;
+  }
+  await initializeContract();
+  if (!AmazonContract) {
+      console.error('Contract initialization failed.');
+      alert('Failed to initialize the contract.');
+      return;
+  }
+  // Check if the element is present
+  if(document.getElementById('productList')) {
+      loadProducts();  // Only call loadProducts if productList is present
+  } else {
+      console.error('Product list element not found');
+  }
 }
 
 async function searchProducts() {
@@ -603,7 +707,21 @@ async function filterProducts() {
   displayItems(filteredItemsArray);
 }
 
+async function deleteProduct(productId) {
+  try {
+      await AmazonContract.methods.deleteItem(productId).send({ from: userAccount });
+      alert('Product deleted successfully');
+      loadProducts();  // Refresh the list after deletion
+  } catch (error) {
+      console.error('Failed to delete product:', error);
+      alert('Failed to delete product: ' + error.message);
+  }
+}
+
 function createItemElement(item) {
+  const isAdmin = window.location.pathname.includes('7.administrator.html');  // Check if on admin page
+  const userIsOwner = userAccount === item.seller;  // Check if the logged-in user is the seller
+
   const itemElement = document.createElement('div');
   itemElement.className = 'product';
   itemElement.innerHTML = `
@@ -611,8 +729,8 @@ function createItemElement(item) {
       <h3>${item.name}</h3>
       <p>Price: ${web3.utils.fromWei(item.cost, 'ether')} ETH</p>
       <p>Stock: ${item.stock}</p>
-      <button onclick="buyProduct(${item.id}, 1)">Buy Now</button>
-      <button onclick="addToCart(${item.id}, 1)">Add to Cart</button>
+      ${userIsOwner && isAdmin ? `<button onclick="editProduct(${item.id})">Edit</button>
+      <button onclick="deleteProduct(${item.id})">Delete</button>` : ''}
   `;
   return itemElement;
 }
@@ -645,20 +763,24 @@ async function connectWalletHistory() {
 
 async function connectWallet() {
   if (window.ethereum) {
-    try {
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      userAccount = accounts[0];
-      await displayAccountInfo(userAccount);
-      window.ethereum.on('accountsChanged', handleAccountsChanged);
-    } catch (error) {
-      if (error.code === 4001) {
-        alert("Connection to MetaMask wallet was rejected by the user.");
-      } else {
-        console.error(error);
+      try {
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          userAccount = accounts[0];
+          await displayAccountInfo(userAccount);
+          window.ethereum.on('accountsChanged', handleAccountsChanged);
+
+          // Store user session
+          sessionStorage.setItem('userAccount', userAccount);
+          alert("Wallet connected: " + userAccount);
+      } catch (error) {
+          if (error.code === 4001) {
+              alert("Connection to MetaMask wallet was rejected by the user.");
+          } else {
+              console.error(error);
+          }
       }
-    }
   } else {
-    alert('Please install MetaMask to use this feature!');
+      alert('Please install MetaMask to use this feature!');
   }
 }
 
@@ -857,6 +979,64 @@ async function displayShippingInfo() {
   }
 }
 
+async function addSeller(address) {
+  try {
+      const accounts = await web3.eth.getAccounts();
+      await AmazonContract.methods.addSeller(address).send({ from: accounts[0] });
+      alert("Seller added successfully.");
+  } catch (error) {
+      console.error('Error adding seller:', error);
+      alert('Error adding seller: ' + error.message);
+  }
+}
+
+async function removeSeller(address) {
+  try {
+      const accounts = await web3.eth.getAccounts();
+      await AmazonContract.methods.removeSeller(address).send({ from: accounts[0] });
+      alert("Seller removed successfully.");
+  } catch (error) {
+      console.error('Error removing seller:', error);
+      alert('Error removing seller: ' + error.message);
+  }
+}
+
+async function loadAdminProducts() {
+  const productList = document.getElementById('productList');
+  if (!productList) {
+      console.error('Admin Product list element not found');
+      return;
+  }
+  productList.innerHTML = ''; // Clear the current items
+
+  try {
+      const count = await AmazonContract.methods.itemCount().call();
+      for (let i = 1; i <= count; i++) {
+          const item = await AmazonContract.methods.items(i).call();
+          if (item.id !== "0" && item.name) { // Ensure item is valid and not empty
+              const itemElement = createAdminItemElement(item);
+              productList.appendChild(itemElement);
+          }
+      }
+  } catch (error) {
+      console.error('Failed to load products for admin:', error);
+  }
+}
+
+function createAdminItemElement(item) {
+  const itemElement = document.createElement('div');
+  itemElement.className = 'product';
+  itemElement.innerHTML = `
+      <img src="${item.imageUrl || 'https://via.placeholder.com/150'}" alt="${item.name}" style="width:100px;height:100px;">
+      <h3>${item.name}</h3>
+      <p>Price: ${web3.utils.fromWei(item.cost, 'ether')} ETH</p>
+      <p>Stock: ${item.stock}</p>
+      <button onclick="editProduct(${item.id})">Edit</button>
+      <button onclick="deleteProduct(${item.id})">Delete</button>
+  `;
+  return itemElement;
+}
+
 window.addEventListener('load', async function() {
   try {
       const web3Loaded = await initializeWeb3();
@@ -905,4 +1085,3 @@ window.addEventListener('load', async function() {
       alert('An error occurred. Please check the console for details.');
   }
 });
-
