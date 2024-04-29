@@ -32,15 +32,16 @@
     <p id="responseMessage">added product</p> <!-- Place for displaying messages -->
 
     <form id="addProductForm" onsubmit="event.preventDefault(); addProduct();">
-        <input type="number" id="productId" placeholder="Product ID" required>
         <input type="text" id="productName" placeholder="Product Name" required>
         <input type="text" id="productCategory" placeholder="Category" required>
         <input type="number" id="productCost" placeholder="Cost (in ETH)" step="0.00001" required>
         <input type="number" id="productStock" placeholder="Stock" required>
         <input type="file" id="productImage" accept="image/*" required>
-        <br>
+        <input type="text" id="manufacturer" placeholder="Manufacturer" required>
+        <input type="text" id="dimensions" placeholder="Dimensions" required>
+        <input type="number" id="weight" placeholder="Weight" step="0.000001" required>
         <button type="submit">Add Product</button>
-    </form>
+    </form>    
 
     <!-- Footer -->
     <footer>

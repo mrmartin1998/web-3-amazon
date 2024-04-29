@@ -26,7 +26,7 @@ async function initializeContract() {
       console.warn('Web3 is not initialized. Skipping contract initialization.');
       return;
   }
-  const contractAddress = '0xC59D3bc2814dA228c461dc54526bbe1E30832978';
+  const contractAddress = '0xb27069475B2C2956D706aEF17146FcC45FE2A6b1';
   const contractABI = [
     {
       "inputs": [],
@@ -84,6 +84,24 @@ async function initializeContract() {
           "internalType": "address",
           "name": "seller",
           "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "manufacturer",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "dimensions",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "weight",
+          "type": "uint256"
         }
       ],
       "name": "ItemListed",
@@ -261,6 +279,21 @@ async function initializeContract() {
           "internalType": "address payable",
           "name": "seller",
           "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "manufacturer",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "dimensions",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "weight",
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -398,6 +431,21 @@ async function initializeContract() {
           "internalType": "uint256",
           "name": "_stock",
           "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "_manufacturer",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_dimensions",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_weight",
+          "type": "uint256"
         }
       ],
       "name": "list",
@@ -532,9 +580,14 @@ async function initializeContract() {
 async function addProduct() {
   const name = document.getElementById('productName').value;
   const category = document.getElementById('productCategory').value;
-  const cost = document.getElementById('productCost').value; // assuming this is already in ETH
+  const cost = document.getElementById('productCost').value;
   const stock = document.getElementById('productStock').value;
-  const imageUrl = "https://via.placeholder.com/150"; // Placeholder image URL
+  const manufacturer = document.getElementById('manufacturer').value;
+  const dimensions = document.getElementById('dimensions').value;
+  const weight = parseInt(document.getElementById('weight').value); // Ensure this is an integer
+
+  // Use a static placeholder image URL
+  const imageUrl = "https://via.placeholder.com/150";
 
   const costInWei = web3.utils.toWei(cost, 'ether');
 
@@ -544,7 +597,7 @@ async function addProduct() {
           alert("You are not authorized to list products.");
           return;
       }
-      await AmazonContract.methods.list(name, category, imageUrl, costInWei, stock).send({ from: accounts[0] });
+      await AmazonContract.methods.list(name, category, imageUrl, costInWei, stock, manufacturer, dimensions, weight).send({ from: accounts[0] });
       document.getElementById('responseMessage').innerText = 'Product added successfully!';
   } catch (error) {
       console.error('Error while adding product:', error);
@@ -586,14 +639,13 @@ async function loadProducts() {
 async function buyProduct(id, quantity = 1) {
   const item = await AmazonContract.methods.items(id).call();
   const accounts = await web3.eth.getAccounts();
-  // Assuming that `item.cost` is already in Wei and needs to be multiplied by quantity.
   const totalCostInWei = BigInt(item.cost) * BigInt(quantity);
-  const costInWeiString = totalCostInWei.toString(); // Convert BigInt to string for the send method.
+  const costInWeiString = totalCostInWei.toString(); // Convert BigInt to string for the transaction
 
   try {
       await AmazonContract.methods.buy(id, quantity).send({ from: accounts[0], value: costInWeiString });
       alert('Product purchased successfully!');
-      loadProducts(); // Refresh products to reflect inventory change.
+      loadProducts(); // Refresh the product list to reflect the change in stock
   } catch (error) {
       console.error('Error purchasing product:', error);
       alert('Error purchasing product: ' + error.message);
@@ -661,16 +713,17 @@ async function searchProducts() {
 
 async function sortProducts() {
   const sortOption = document.getElementById('sortOptions').value;
-  let itemsArray = await fetchAllItems(); // Assume this is a function that fetches all items and returns them as an array
+  let itemsArray = await fetchAllItems();
 
-  if (sortOption === 'priceLowHigh') {
-    itemsArray.sort((a, b) => parseFloat(a.cost) - parseFloat(b.cost));
-  } else if (sortOption === 'priceHighLow') {
-    itemsArray.sort((a, b) => parseFloat(b.cost) - parseFloat(a.cost));
+  switch(sortOption) {
+    case 'priceLowHigh':
+      itemsArray.sort((a, b) => parseFloat(a.cost) - parseFloat(b.cost));
+      break;
+    case 'priceHighLow':
+      itemsArray.sort((a, b) => parseFloat(b.cost) - parseFloat(a.cost));
+      break;
   }
-  // Implement other sorting options as needed
-  
-  displayItems(itemsArray); // Function to display the items
+  displayItems(itemsArray);
 }
 
 async function fetchAllItems() {
@@ -719,18 +772,19 @@ async function deleteProduct(productId) {
 }
 
 function createItemElement(item) {
-  const isAdmin = window.location.pathname.includes('7.administrator.html');  // Check if on admin page
-  const userIsOwner = userAccount === item.seller;  // Check if the logged-in user is the seller
+  const isAdmin = window.location.pathname.includes('administrator.html'); // Check if the user is an admin
+  const userIsOwner = userAccount === item.seller; // Check if the user is the seller of the product
 
   const itemElement = document.createElement('div');
   itemElement.className = 'product';
   itemElement.innerHTML = `
-      <img src="${item.imageUrl || 'https://via.placeholder.com/150'}" alt="${item.name}" style="width:100px;height:100px;">
+      <img src="${item.imageUrl}" alt="${item.name}" style="width:100px;height:100px;">
       <h3>${item.name}</h3>
+      <p>Category: ${item.category}</p>
       <p>Price: ${web3.utils.fromWei(item.cost, 'ether')} ETH</p>
       <p>Stock: ${item.stock}</p>
-      ${userIsOwner && isAdmin ? `<button onclick="editProduct(${item.id})">Edit</button>
-      <button onclick="deleteProduct(${item.id})">Delete</button>` : ''}
+      <button onclick="buyProduct(${item.id}, 1)">Buy</button>
+      ${userIsOwner || isAdmin ? `<button onclick="editProduct(${item.id})">Edit</button> <button onclick="deleteProduct(${item.id})">Delete</button>` : ''}
   `;
   return itemElement;
 }

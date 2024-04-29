@@ -13,6 +13,9 @@ contract Amazon {
         uint256 cost;
         uint256 stock;
         address payable seller;
+        string manufacturer;
+        string dimensions;
+        uint256 weight;
     }
 
     struct ShippingInfo {
@@ -28,7 +31,17 @@ contract Amazon {
     mapping(address => uint256[]) public orders;
     mapping(address => ShippingInfo) public shippingInfo;
 
-    event ItemListed(uint256 indexed itemId, string name, string imageUrl, uint256 cost, uint256 stock, address indexed seller);
+    event ItemListed(
+        uint256 indexed itemId, 
+        string name, 
+        string imageUrl, 
+        uint256 cost, 
+        uint256 stock, 
+        address indexed seller, 
+        string manufacturer, 
+        string dimensions, 
+        uint256 weight
+    );
     event ItemPurchased(address indexed buyer, uint256 itemId, uint256 quantity);
     event ShippingInfoUpdated(address indexed user, string name, string street, string city, string postalCode, string country);
     event ItemDeleted(uint256 indexed itemId);
@@ -47,7 +60,7 @@ contract Amazon {
 
     constructor() {
         owner = msg.sender;
-        isSeller[owner] = true; // Owner is automatically a seller
+        isSeller[owner] = true;
     }
 
     function addSeller(address _seller) public onlyOwner {
@@ -60,10 +73,40 @@ contract Amazon {
         emit SellerRemoved(_seller);
     }
 
-    function list(string memory _name, string memory _category, string memory _imageUrl, uint256 _costWei, uint256 _stock) public onlySeller {
+    function list(
+        string memory _name,
+        string memory _category,
+        string memory _imageUrl,
+        uint256 _costWei,
+        uint256 _stock,
+        string memory _manufacturer,
+        string memory _dimensions,
+        uint256 _weight
+    ) public onlySeller {
         uint256 newItemId = itemCount++;
-        items[newItemId] = Item(newItemId, _name, _category, _imageUrl, _costWei, _stock, payable(msg.sender));
-        emit ItemListed(newItemId, _name, _imageUrl, _costWei, _stock, msg.sender);
+        items[newItemId] = Item(
+            newItemId,
+            _name,
+            _category,
+            _imageUrl,
+            _costWei,
+            _stock,
+            payable(msg.sender),
+            _manufacturer,
+            _dimensions,
+            _weight
+        );
+        emit ItemListed(
+            newItemId, 
+            _name, 
+            _imageUrl, 
+            _costWei, 
+            _stock, 
+            msg.sender, 
+            _manufacturer, 
+            _dimensions, 
+            _weight
+        );
     }
 
     function buy(uint256 _id, uint256 _quantity) public payable {
